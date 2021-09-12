@@ -11,6 +11,15 @@
 			"AdditionalDependencies": [
 				"Engine"
 			]
+		},
+		{
+			"Name": "TempCapstoneProjectEditor",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "PreLoadingScreen",
+			"AdditionalDependencies": [
+				"Engine",
+				"AnimGraph"
+			]
 		}
 	]
 }

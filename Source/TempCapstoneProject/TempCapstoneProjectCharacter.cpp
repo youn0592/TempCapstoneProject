@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "TempCapstoneProjectCharacter.h"
+#include "HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -70,6 +71,21 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 	// handle touch devices
 	PlayerInputComponent->BindTouch(IE_Pressed, this, &ATempCapstoneProjectCharacter::TouchStarted);
 	PlayerInputComponent->BindTouch(IE_Released, this, &ATempCapstoneProjectCharacter::TouchStopped);
+
+	// VR headset functionality
+	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnResetVR);
+}
+
+
+void ATempCapstoneProjectCharacter::OnResetVR()
+{
+	// If TempCapstoneProject is added to a project via 'Add Feature' in the Unreal Editor the dependency on HeadMountedDisplay in TempCapstoneProject.Build.cs is not automatically propagated
+	// and a linker error will result.
+	// You will need to either:
+	//		Add "HeadMountedDisplay" to [YourProject].Build.cs PublicDependencyModuleNames in order to build successfully (appropriate if supporting VR).
+	// or:
+	//		Comment or delete the call to ResetOrientationAndPosition below (appropriate if not supporting VR)
+	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
 }
 
 void ATempCapstoneProjectCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
