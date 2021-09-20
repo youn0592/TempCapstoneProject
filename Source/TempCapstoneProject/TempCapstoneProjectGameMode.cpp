@@ -5,12 +5,14 @@
 #include "UObject/ConstructorHelpers.h"
 
 #include "SplitScreenGameViewportClient.h"
-
+#include "Kismet/GameplayStatics.h"
 
 // Called when the game starts or when spawned
 void ATempCapstoneProjectGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UGameplayStatics::CreatePlayer(GetWorld(), -1);
 
 	// Acquire pointer to Viewport client
 	GameViewportClient = Cast<USplitScreenGameViewportClient>(GetWorld()->GetGameViewport());
