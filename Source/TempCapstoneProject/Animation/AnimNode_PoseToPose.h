@@ -3,6 +3,7 @@
 #pragma once
 #include "Animation/AnimNodeBase.h"
 #include "Animation/InputScaleBias.h"
+#include "ProceduralAnimationComponent.h"
 #include "AnimNode_PoseToPose.generated.h"
 
 /**
@@ -15,14 +16,6 @@ struct TEMPCAPSTONEPROJECT_API FAnimNode_PoseToPose : public FAnimNode_Base
 	GENERATED_BODY()
 		
 protected:
-
-	uint8 bAIsRelevant : 1;
-
-	uint8 bBIsRelevant : 1;
-
-	uint8 bInputPosesHaveChanged : 1;
-
-	//FCompactPose AnimPose_Current;
 
 	int lastAnimPoseIndex = 3;
 
@@ -52,13 +45,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Runtime, meta = (AlwaysAsPin))
 		float Alpha;
 
-	/** The float value that controls the alpha blending when the alpha input type is set to 'Float' */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Runtime, meta = (AlwaysAsPin))
-		float Beta;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FTransform xxx;
-
 public:
 
 
@@ -76,10 +62,8 @@ public:
 
 	FAnimNode_PoseToPose()
 		: 
-		bAIsRelevant(false),
-		bBIsRelevant(false),
-		bResetChildOnActivation(false),
 		CurrentAnimPoseIndex(0),
+		bResetChildOnActivation(false),
 		Alpha(0.0f)
 	{
 	}

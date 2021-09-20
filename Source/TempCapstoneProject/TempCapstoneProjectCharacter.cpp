@@ -9,6 +9,8 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 
+#include "Animation/ProceduralAnimationComponent.h"
+
 //////////////////////////////////////////////////////////////////////////
 // ATempCapstoneProjectCharacter
 
@@ -42,7 +44,9 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-
+	
+	ProcAnimComp = CreateDefaultSubobject<UProceduralAnimationComponent>(TEXT("ProcAnimComp"));
+	// ProcAnimComp->Setup(GetCapsuleComponent());
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 }
@@ -74,8 +78,27 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnResetVR);
+
 }
 
+//	/* CAPSTONE custom stuff */
+//	FRotator UCharacterMovementComponent::ComputeOrientToMovementRotation(const FRotator& CurrentRotation, float DeltaTime, FRotator& DeltaRotation) const
+//	{
+//		if (Acceleration.SizeSquared() < KINDA_SMALL_NUMBER)
+//		{
+//			// AI path following request can orient us in that direction (it's effectively an acceleration)
+//			if (bHasRequestedVelocity && RequestedVelocity.SizeSquared() > KINDA_SMALL_NUMBER)
+//			{
+//				return Velocity.GetSafeNormal().Rotation();
+//			}
+//	
+//			// Don't change rotation if there is no acceleration.
+//			return CurrentRotation;
+//		}
+//	
+//		// Rotate toward direction of acceleration.
+//		return Velocity.GetSafeNormal().Rotation();
+//	}
 
 void ATempCapstoneProjectCharacter::OnResetVR()
 {
@@ -87,6 +110,22 @@ void ATempCapstoneProjectCharacter::OnResetVR()
 	//		Comment or delete the call to ResetOrientationAndPosition below (appropriate if not supporting VR)
 	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
 }
+
+void ATempCapstoneProjectCharacter::BeginPlay() {
+	Super::BeginPlay();
+	ProcAnimComp->Setup();
+}
+
+/// void ATempCapstoneProjectCharacter::Tick(float DeltaTime)
+/// {
+/// 	FaceRotation(GetVelocity().Rotation(), DeltaTime);
+/// }
+
+UProceduralAnimationComponent* ATempCapstoneProjectCharacter::GetProceduralAnimComponent()
+{
+	return ProcAnimComp;
+}
+
 
 void ATempCapstoneProjectCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {

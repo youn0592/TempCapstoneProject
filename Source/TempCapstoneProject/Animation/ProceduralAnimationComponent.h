@@ -4,29 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProceduralAnimationInfo.h"
 #include "ProceduralAnimationComponent.generated.h"
-
-class UCapsuleComponent;
-
-USTRUCT(BlueprintType)
-struct TEMPCAPSTONEPROJECT_API FCharacterAnimInfo
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY(BlueprintReadWrite, Category = "Animation")
-		float StrideLength = 1.0f;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
-		FVector Lean;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
-		FVector RightFootIK_Target;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
-		FVector LeftFootIK_Target;
-
-};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TEMPCAPSTONEPROJECT_API UProceduralAnimationComponent : public UActorComponent
@@ -35,25 +14,84 @@ class TEMPCAPSTONEPROJECT_API UProceduralAnimationComponent : public UActorCompo
 
 public:	
 
+	enum class FootEnum { LeftFoot, RightFoot };
+
 	UProceduralAnimationComponent();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Animation Component")
-		class USkeletalMeshComponent* BodyMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		FProceduralAnimationInfo AnimInfo;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Animation Component")
-		FCharacterAnimInfo AnimInfo;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Animation Component")
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		class UStaticMeshComponent* WheelMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float MaxStrideLength = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float StepWidth = 1.0f;
+	
+	//	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+	//		float HipWidth = 1.0f;
+	
+	//	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+	//		float LegLength = 150.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float LeanScale = 0.01f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float LeanLimit = 2.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float LeanOvershootScale = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float JumpLeanScale = 3.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float IK_PredictionRate = 3.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float IK_ReplantRate = 3.0f;
 
 protected:
 
-	UCapsuleComponent* CapsuleCollider = nullptr;
-	virtual void BeginPlay() override;
+	class UCapsuleComponent* CapsuleCollider = nullptr;
+	class UCharacterMovementComponent* MovementComp = nullptr;
+
+	// Lean variables
+	FVector VelocityChange = FVector::ZeroVector;
+	FVector OldVelocity = FVector::ZeroVector;
+	FVector LeanOvershoot = FVector::ZeroVector;
+
+	// IK variables
+	//	FVector CapsuleBase;
+	//	FVector LegOffset_Right;
+	float IK_SquareDistanceSinceReplant = 0;
+	
+	float IK_TriggerFactor = 0;
+	bool IK_MustReplant = true;
+	FTransform IK_LastL;
+	FTransform IK_NextL;
+	FTransform IK_LastR;
+	FTransform IK_NextR;
+
+	FootEnum IK_ReachingFoot = FootEnum::LeftFoot;
+	FVector IK_PredictedCapsuleLocation;
 
 public:	
 	
-	void Setup(UCapsuleComponent* CharacterCapsule);
+	UFUNCTION(BlueprintCallable)
+		FProceduralAnimationInfo GetAnimInfo();
+
+	void Setup();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-		
+
+protected:
+
+	void HandleHamsterWheel(float DeltaTime, FVector worldVelocity);
+	void HandleLean(float DeltaTime, FVector worldVelocity);
+	void HandleIK(float DeltaTime);
+	void UpdateIKTarget();
+
 };

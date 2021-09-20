@@ -21,6 +21,15 @@ class ATempCapstoneProjectCharacter : public ACharacter
 public:
 	ATempCapstoneProjectCharacter();
 
+	/* CAPSTONE custom stuff */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Component")
+	class UProceduralAnimationComponent* ProcAnimComp;
+
+	UFUNCTION(BlueprintCallable)
+		UProceduralAnimationComponent* GetProceduralAnimComponent();
+
+	// virtual FRotator ComputeOrientToMovementRotation(const FRotator& CurrentRotation, float DeltaTime, FRotator& DeltaRotation) const override;
+
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseTurnRate;
@@ -64,6 +73,9 @@ protected:
 	// End of APawn interface
 
 public:
+
+	//virtual void Tick(float DeltaTime) override;
+	virtual void BeginPlay() override;
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
