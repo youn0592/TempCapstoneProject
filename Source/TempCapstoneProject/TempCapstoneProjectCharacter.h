@@ -68,5 +68,19 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+public:
+
+	UPROPERTY(EditAnywhere)
+		float DashDistance;
+
+	UPROPERTY(EditAnywhere)
+		float DashTime;
+
+	UPROPERTY(EditAnywhere)
+		float DashReset;
+private:
+	bool m_CanDash = true;
+	void Dash();
 };
 
