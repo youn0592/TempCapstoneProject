@@ -6,6 +6,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/MovementComponent.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 
@@ -74,7 +76,38 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnResetVR);
+
+	// PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ATempCapstoneProjectCharacter::Dash);
 }
+
+//void ATempCapstoneProjectCharacter::Dash()
+//{
+//	if (m_CanDash == false)
+//		return;
+//
+//	m_CanDash = false;
+//
+//	// Launches the character in forward direction.
+//	LaunchCharacter((DashDistance / DashTime) * GetCapsuleComponent()->GetForwardVector(), false, false); 
+//
+//	FTimerDelegate TimerDelegate;
+//	TimerDelegate.BindLambda([&]
+//		{
+//			GetMovementComponent()->StopMovementImmediately();
+//		});
+//
+//	FTimerHandle TimerHandle;
+//	GetWorld()->GetTimerManager().SetTimer(TimerHandle, TimerDelegate, DashTime, false);
+//
+//	FTimerDelegate TimerDelegate2;
+//	TimerDelegate2.BindLambda([&]
+//		{
+//			m_CanDash = true;
+//		});
+//
+//	FTimerHandle TimerHandle2;
+//	GetWorld()->GetTimerManager().SetTimer(TimerHandle2, TimerDelegate2, DashReset, false);
+//}
 
 
 void ATempCapstoneProjectCharacter::OnResetVR()
