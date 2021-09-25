@@ -78,9 +78,10 @@ void ATempCapstoneProjectCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// RemoteRole = ROLE_SimulatedProxy
-	int local = GetLocalRole();
-	int remote = GetRemoteRole();
+	if (GetController())
+	{
+		UGameplayStatics::CreatePlayer(GetWorld(), -1);
+	}
 
 	//	if (GetLocalRole() == ROLE_AutonomousProxy)
 	//	{
@@ -103,12 +104,6 @@ void ATempCapstoneProjectCharacter::BeginPlay()
 	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Yellow, FString::Printf(TEXT("Auth |")));
 	//		break;
 	//	}
-
-		if(GetController())
-		{
-			UGameplayStatics::CreatePlayer(GetWorld(), -1);
-		}
-
 }
 
 
@@ -136,10 +131,6 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnInteract);
 }
 
-void ATempCapstoneProjectCharacter::BeginPlay()
-{
-    Super::BeginPlay();
-}
 
 void ATempCapstoneProjectCharacter::Tick(float DeltaSeconds)
 {
