@@ -10,6 +10,7 @@
 #include "Engine/LevelStreaming.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerStart.h"
 
 ATempCapstoneProjectGameMode::ATempCapstoneProjectGameMode()
 {
@@ -123,35 +124,55 @@ void ATempCapstoneProjectGameMode::SpawnPawnAndPosess(APlayerController* NewPlay
 	APawn* oldPawn = NewPlayer->GetPawnOrSpectator();
 	NewPlayer->UnPossess();
 
-	//	Oh god oh fuck
-	switch (PlayerCount)
+	TArray<AActor*> FoundStartPoints;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), FoundStartPoints );
+
+	if (FoundStartPoints.Num() > 1)
 	{
-	case 1:
-		DefaultPawnClass = PlayerOneIsPaladin ? pPaladinBP : pRogueBP;
-		RestartPlayer(NewPlayer);
-		break;
-	
-	case 2:
-		DefaultPawnClass = pDummyBP;
-		RestartPlayer(NewPlayer);
-		break;
-	
-	case 3:
-		DefaultPawnClass = PlayerOneIsPaladin ? pRogueBP : pPaladinBP;
-		RestartPlayer(NewPlayer);
-		break;
-	
-	case 4:
-		DefaultPawnClass = pDummyBP;
-		RestartPlayer(NewPlayer);
+		AActor* PaladinStartPoint;
+		AActor* RogueStartPoint;
 
-		// everyone's in the game, setup dummy pawns
-		Cast<ADummyPawn>(PlayerControllerList[1]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[2]->GetCharacter()) );
-		Cast<ADummyPawn>(PlayerControllerList[3]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[0]->GetCharacter()) );
+		if (Cast<APlayerStart>(FoundStartPoints[0])->PlayerStartTag == "Paladin")
+		{
+			PaladinStartPoint = FoundStartPoints[0];
+			RogueStartPoint = FoundStartPoints[1];
+		}
+		else
+		{
+			PaladinStartPoint = FoundStartPoints[1];
+			RogueStartPoint = FoundStartPoints[0];
+		}
 
-		break;
+		//	Oh god oh fuck
+		switch (PlayerCount)
+		{
+		case 1:
+
+			DefaultPawnClass = PlayerOneIsPaladin ? pPaladinBP : pRogueBP;
+			RestartPlayerAtPlayerStart(NewPlayer, PlayerOneIsPaladin ? PaladinStartPoint : RogueStartPoint);
+			break;
+		
+		case 2:
+			DefaultPawnClass = pDummyBP;
+			RestartPlayerAtPlayerStart(NewPlayer, PlayerOneIsPaladin ? PaladinStartPoint : RogueStartPoint);
+			break;
+		
+		case 3:
+			DefaultPawnClass = !PlayerOneIsPaladin ? pPaladinBP : pRogueBP;
+			RestartPlayerAtPlayerStart(NewPlayer, !PlayerOneIsPaladin ? PaladinStartPoint : RogueStartPoint);
+			break;
+		
+		case 4:
+			DefaultPawnClass = pDummyBP;
+			RestartPlayerAtPlayerStart(NewPlayer, !PlayerOneIsPaladin ? PaladinStartPoint : RogueStartPoint);
+
+			// everyone's in the game, setup dummy pawns
+			Cast<ADummyPawn>(PlayerControllerList[1]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[2]->GetCharacter()) );
+			Cast<ADummyPawn>(PlayerControllerList[3]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[0]->GetCharacter()) );
+
+			break;
+		}
 	}
-
 
 	//	if (oldPawn)
 	//	oldPawn->Destroy();
