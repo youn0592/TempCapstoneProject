@@ -11,6 +11,10 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 
+#include "TempCapstoneProjectGameMode.h"
+#include "Kismet/GameplayStatics.h"
+#include "DummyPawn.h"
+
 //////////////////////////////////////////////////////////////////////////
 // ATempCapstoneProjectCharacter
 
@@ -18,6 +22,15 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+
+	static ConstructorHelpers::FClassFinder<APawn> DummyLocalBP_Getter(TEXT("/Game/Blueprints/Characters/BP_DummyPawn"));
+
+	if (DummyLocalBP_Getter.Class != NULL)
+	{
+		pDummyBP = DummyLocalBP_Getter.Class;
+	}
+
+	//	DummyController = CreateDefaultSubobject<APlayerController>(TEXT("dummyController"));
 
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
@@ -45,12 +58,53 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	//	UGameplayStatics::CreatePlayer(GetWorld(), -1);
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
+//	void ATempCapstoneProjectCharacter::SpawnDummy(APlayerController* dummyController)
+//	{
+//	}
+
+void ATempCapstoneProjectCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	// RemoteRole = ROLE_SimulatedProxy
+	int local = GetLocalRole();
+	int remote = GetRemoteRole();
+
+	//	if (GetLocalRole() == ROLE_AutonomousProxy)
+	//	{
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::White, GetName());
+	//	}
+	// GEngine->AddOnScreenDebugMessage(-1, 50, FColor::White, FString::Printf(TEXT("%d , %d"), local, remote));
+	// GEngine->AddOnScreenDebugMessage(-1, 50, FColor::White, GetName());
+	//	switch (GetLocalRole())
+	//	{
+	//	case ROLE_None:
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Red, FString::Printf(TEXT("NONE |")));
+	//		break;
+	//	case ROLE_SimulatedProxy:
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Green, FString::Printf(TEXT("SimProc |")));
+	//		break;
+	//	case ROLE_AutonomousProxy:
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Blue, FString::Printf(TEXT("AutProc |")));
+	//		break;
+	//	case ROLE_Authority:
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Yellow, FString::Printf(TEXT("Auth |")));
+	//		break;
+	//	}
+
+		if(GetController())
+		{
+			UGameplayStatics::CreatePlayer(GetWorld(), -1);
+		}
+
+}
+
 
 void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -70,65 +124,7 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ATempCapstoneProjectCharacter::LookUpAtRate);
 
-	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &ATempCapstoneProjectCharacter::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &ATempCapstoneProjectCharacter::TouchStopped);
-
-	// VR headset functionality
-	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnResetVR);
-
 	// PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ATempCapstoneProjectCharacter::Dash);
-}
-
-//void ATempCapstoneProjectCharacter::Dash()
-//{
-//	if (m_CanDash == false)
-//		return;
-//
-//	m_CanDash = false;
-//
-//	// Launches the character in forward direction.
-//	LaunchCharacter((DashDistance / DashTime) * GetCapsuleComponent()->GetForwardVector(), false, false); 
-//
-//	FTimerDelegate TimerDelegate;
-//	TimerDelegate.BindLambda([&]
-//		{
-//			GetMovementComponent()->StopMovementImmediately();
-//		});
-//
-//	FTimerHandle TimerHandle;
-//	GetWorld()->GetTimerManager().SetTimer(TimerHandle, TimerDelegate, DashTime, false);
-//
-//	FTimerDelegate TimerDelegate2;
-//	TimerDelegate2.BindLambda([&]
-//		{
-//			m_CanDash = true;
-//		});
-//
-//	FTimerHandle TimerHandle2;
-//	GetWorld()->GetTimerManager().SetTimer(TimerHandle2, TimerDelegate2, DashReset, false);
-//}
-
-
-void ATempCapstoneProjectCharacter::OnResetVR()
-{
-	// If TempCapstoneProject is added to a project via 'Add Feature' in the Unreal Editor the dependency on HeadMountedDisplay in TempCapstoneProject.Build.cs is not automatically propagated
-	// and a linker error will result.
-	// You will need to either:
-	//		Add "HeadMountedDisplay" to [YourProject].Build.cs PublicDependencyModuleNames in order to build successfully (appropriate if supporting VR).
-	// or:
-	//		Comment or delete the call to ResetOrientationAndPosition below (appropriate if not supporting VR)
-	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
-}
-
-void ATempCapstoneProjectCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		Jump();
-}
-
-void ATempCapstoneProjectCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		StopJumping();
 }
 
 void ATempCapstoneProjectCharacter::TurnAtRate(float Rate)

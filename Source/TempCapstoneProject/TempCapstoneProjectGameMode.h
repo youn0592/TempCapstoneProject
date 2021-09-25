@@ -22,6 +22,7 @@ protected:
 
 	TSubclassOf <ACharacter> pRogueBP;
 	TSubclassOf <ACharacter> pPaladinBP;
+	TSubclassOf<APawn> pDummyBP;
 
 	uint8 PlayerCount;
 
@@ -35,6 +36,8 @@ protected:
 
 public:
 
+	//	void SetDefaultPawnToDummy();
+	
 	bool bLevelHasLoaded = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
