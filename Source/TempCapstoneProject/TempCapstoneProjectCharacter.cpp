@@ -3,6 +3,7 @@
 #include "TempCapstoneProjectCharacter.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -10,6 +11,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "InteractionInterface.h"
 
 #include "TempCapstoneProjectGameMode.h"
 #include "Kismet/GameplayStatics.h"
@@ -62,6 +64,10 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+
+	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Interaction Box"));
+	InteractionBox->SetBoxExtent(FVector(140.0f, 140.0f, 65.0f));
+	InteractionBox->SetupAttachment(RootComponent);
 }
 
 //	void ATempCapstoneProjectCharacter::SpawnDummy(APlayerController* dummyController)
@@ -125,6 +131,61 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ATempCapstoneProjectCharacter::LookUpAtRate);
 
 	// PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ATempCapstoneProjectCharacter::Dash);
+
+	// Interact with objects
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnInteract);
+}
+
+void ATempCapstoneProjectCharacter::BeginPlay()
+{
+    Super::BeginPlay();
+}
+
+void ATempCapstoneProjectCharacter::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+
+	CheckClosestInteraction();
+}
+
+void ATempCapstoneProjectCharacter::OnInteract()
+{
+	if (Interface)
+		Interface->Interact();
+}
+
+void ATempCapstoneProjectCharacter::CheckClosestInteraction()
+{
+	TArray<AActor*>OverlappingActors;
+	InteractionBox->GetOverlappingActors(OverlappingActors);
+
+	if (OverlappingActors.Num() == 0)
+	{
+		if (Interface)
+		{
+			Interface->HideInteractionWidget();
+			Interface = nullptr;
+		}
+		return;
+	}
+
+	AActor* ClosestActor = OverlappingActors[0];
+
+	for (auto CurrentActor : OverlappingActors)
+	{
+		if (GetDistanceTo(CurrentActor) < GetDistanceTo(ClosestActor))
+		{
+			ClosestActor = CurrentActor;
+		}
+	}
+
+	if (Interface)
+		Interface->HideInteractionWidget();
+
+	Interface = Cast<IInteractionInterface>(ClosestActor);
+
+	if (Interface)
+		Interface->ShowInteractionWidget();
 }
 
 void ATempCapstoneProjectCharacter::TurnAtRate(float Rate)
