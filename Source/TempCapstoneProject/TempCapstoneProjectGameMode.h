@@ -20,12 +20,33 @@ protected:
 	// pointer to custom game viewport class for splitscreen purposes
 	class USplitScreenGameViewportClient* GameViewportClient = nullptr;
 
+	TSubclassOf <ACharacter> pRogueBP;
+	TSubclassOf <ACharacter> pPaladinBP;
+
+	uint8 PlayerCount;
+
+	// Game Startup methods
+	void DelaySpawnUntilLevelLoaded();
+	void SpawnPawnAndPosess(APlayerController* NewPlayer);
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	FTimerHandle SpawnDelayHandle;
+
 public:
+
+	bool bLevelHasLoaded = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		bool PlayerOneIsPaladin = true;
+
 	ATempCapstoneProjectGameMode();
 
 	// method used to modify the splitscreen split bias
 	UFUNCTION(BlueprintCallable)
 		void SetSplitscreenBias(float TargetBias, float TransitionDuration = 1.0f, EScreenDividerMovementStyle TransitionStyle = EScreenDividerMovementStyle::Linear);
+
+	TArray<class APlayerController*> PlayerControllerList;
 
 	virtual void BeginPlay() override;
 
