@@ -68,8 +68,6 @@ protected:
 	FVector LeanOvershoot = FVector::ZeroVector;
 
 	// IK variables
-	//	FVector CapsuleBase;
-	//	FVector LegOffset_Right;
 	class USkeletalMeshComponent* CharacterMesh;
 
 	float IK_SquareDistanceSinceReplant = 0;
@@ -80,6 +78,8 @@ protected:
 	FTransform IK_NextL;
 	FTransform IK_LastR;
 	FTransform IK_NextR;
+
+	float previousCalcZ = 0;
 
 	FootEnum IK_ReachingFoot = FootEnum::LeftFoot;
 	FVector IK_PredictedCapsuleLocation;

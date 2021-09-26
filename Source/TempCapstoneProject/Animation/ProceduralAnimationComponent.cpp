@@ -8,8 +8,9 @@
 #include "GameFramework/Character.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
-// #include "Kismet/KismetSystemLibrary.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 UProceduralAnimationComponent::UProceduralAnimationComponent() : AnimInfo()
 {
@@ -75,10 +76,10 @@ void UProceduralAnimationComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	HandleLean(ClampedDelta, Worldvel);
 	HandleIK(ClampedDelta);
 
-	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("%f"), CalcPelvisZ));
+	if(FMath::Abs(previousCalcZ - CalcPelvisZ) < 30)
+	AnimInfo.PelvisDeltaHeight = FMath::FInterpTo(AnimInfo.PelvisDeltaHeight, CalcPelvisZ, ClampedDelta, 20.f - AnimInfo.WalkRunBlend*15);
 
-	AnimInfo.PelvisDeltaHeight = FMath::FInterpTo(AnimInfo.PelvisDeltaHeight, CalcPelvisZ, ClampedDelta, 10.F);
-
+	previousCalcZ = CalcPelvisZ;
 }
 
 void UProceduralAnimationComponent::HandleHamsterWheel(float DeltaTime, FVector worldVelocity)
@@ -100,6 +101,8 @@ void UProceduralAnimationComponent::HandleHamsterWheel(float DeltaTime, FVector 
 
 	if (AnimInfo.WalkRunBlend < 0.005f)
 	{
+		AnimInfo.PoseBlendAlpha = fmod(AnimInfo.PoseBlendAlpha, 1.0f);
+
 		if(AnimInfo.PoseBlendAlpha <= 0.5f)
 		AnimInfo.PoseBlendAlpha = FMath::Lerp(AnimInfo.PoseBlendAlpha, 0.f, DeltaTime);
 		else
@@ -117,7 +120,6 @@ void UProceduralAnimationComponent::HandleHamsterWheel(float DeltaTime, FVector 
 	//	AnimInfo.RFootIK_BlendFactor = FMath::Clamp(sinf(2 * PI * AnimInfo.PoseBlendAlpha), 0.f, 1.f);
 	//	AnimInfo.LFootIK_BlendFactor = FMath::Clamp(sinf(PI * (2 * AnimInfo.PoseBlendAlpha + 0.5f)), 0.f, 1.f);
 
-	// GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("%f"), AnimInfo.RFootIK_BlendFactor));
 
 	// AnimInfo.PoseBlendAlpha = fmod(AnimInfo.PoseBlendAlpha, 1.0f);
 
@@ -153,10 +155,11 @@ void UProceduralAnimationComponent::HandleLean(float DeltaTime, FVector worldVel
 	LeanOvershoot.Y = FMath::Lerp(LeanOvershoot.Y, AccelVector.Y, FMath::Clamp(OvershootFactorCoefficient * DeltaTime, 0.f, 1.f));
 	LeanOvershoot.Z = FMath::Lerp(LeanOvershoot.Z, AccelVector.Z, FMath::Clamp(OvershootFactorCoefficient * DeltaTime, 0.f, 1.f));
 
-	// CalcPelvisZ = FMath::Clamp(FMath::Lerp(CalcPelvisZ, LeanOvershoot.Z, FMath::Clamp(10 * DeltaTime, 0.f, 1.f) ), -20.f,20.f);
+	//	CalcPelvisZ = FMath::Clamp(FMath::Lerp(CalcPelvisZ, -50*LeanOvershoot.Z, FMath::Clamp(40 * DeltaTime, 0.f, 1.f) ), -20.f,20.f);
+	//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("%f"), CalcPelvisZ));
 
 	//--Play with this to scale leaning caused by jumping.
-	float FinJumpLeanScale = AccelVector.Z < 0 ? 1.f : 1.f;
+	float FinJumpLeanScale = AccelVector.Z < 0 ? 1.f : 0.2f;
 
 	//--Calculate final Lean amount by lerping to the sum of velocity-based, acceleration-based and Jump-based leaning.
 	//--Clamped velocity-based side-leaning and jump based leaning. (RECONSIDER CLAMPING OR EXPOSE SOME OF THOSE VALUES) (TEST FOR FRAME DEPENDANCY ISSUES)
@@ -201,7 +204,7 @@ void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 	FVector lNormal = FVector::UpVector;
 	FVector rNormal = FVector::UpVector;
 
-	float RayRange = CapsuleCollider->GetScaledCapsuleHalfHeight() + 20 * MinDistanceFromRoot;
+	float RayRange = CapsuleCollider->GetScaledCapsuleHalfHeight() + 55;
 	
 	lfootRayOrigin.Z = rfootRayOrigin.Z = CapsuleCollider->GetRelativeLocation().Z;
 	
@@ -211,19 +214,40 @@ void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 	if (GetWorld()->LineTraceSingleByChannel(hit, lfootRayOrigin, lfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
 	{
 		DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
-		LDistance = hit.Distance - 5;
+		LDistance = hit.Distance;
 		lNormal = hit.Normal;
 		lhit = true;
 	}
+	//	else
+	//	{
+	//		if (GetWorld()->LineTraceSingleByChannel(hit, -CapsuleCollider->GetRightVector() * 10 + lfootRayOrigin, lfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
+	//		{
+	//			DrawDebugSphere(GetWorld(), hit.Location, 5.0f, 8, FColor::Green);
+	//			LDistance = hit.Distance - 5;
+	//			lNormal = hit.Normal;
+	//			lhit = true;
+	//		}
+	//	}
 	
 	if (GetWorld()->LineTraceSingleByChannel(hit, rfootRayOrigin, rfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
 	{
 		DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
-		RDistance = hit.Distance - 5;
+		RDistance = hit.Distance;
 		rNormal = hit.Normal;
 		rhit = true;
 	}
-	
+	//	else
+	//	{
+	//		
+	//		if (GetWorld()->LineTraceSingleByChannel(hit, CapsuleCollider->GetRightVector() * 10 + rfootRayOrigin,rfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
+	//		{
+	//			DrawDebugSphere(GetWorld(), hit.Location, 5.0f, 8, FColor::Green);
+	//			RDistance = hit.Distance - 5;
+	//			rNormal = hit.Normal;
+	//			rhit = true;
+	//		}
+	//	}
+
 
 	if (lhit || rhit)
 	{
@@ -238,16 +262,26 @@ void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 		//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("%f"), (Dt - MinDistanceFromRoot)));
 		//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Yellow, FString::Printf(TEXT("%f"), RDistance));
 		//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("%f"), LDistance));
+		//if (FMath::IsNearlyEqual(RDistance, LDistance, 1) && RDistance - CapsuleCollider->GetScaledCapsuleHalfHeight() > 1)
+		//	RDistance = LDistance = 0;
 
 		RFinalAlpha = RDistance / (Dt - MinDistanceFromRoot) - 2.f ;
 		LFinalAlpha = LDistance / (Dt - MinDistanceFromRoot) - 2.f ;
 
+		//	AnimInfo.RFootIK_Rotator = FRotator(FMath::Atan2(rNormal.Y, rNormal.Z), 0, FMath::Atan2(rNormal.Y,rNormal.Z));
+		//	AnimInfo.LFootIK_Rotator = FRotator(FMath::Atan2(lNormal.Y, lNormal.Z), 0, FMath::Atan2(lNormal.Y,lNormal.Z));
+
+		float rRoll = 0; float rPitch = 0; float lRoll = 0; float lPitch = 0;
+
+		UKismetMathLibrary::GetSlopeDegreeAngles(CapsuleCollider->GetRightVector(), rNormal, FVector::UpVector, rRoll, rPitch);
+		UKismetMathLibrary::GetSlopeDegreeAngles(CapsuleCollider->GetRightVector(), lNormal, FVector::UpVector, lRoll, lPitch);
+
+		AnimInfo.RFootIK_Rotator = FRotator(-rPitch, 0, -rRoll);
+		AnimInfo.LFootIK_Rotator = FRotator(-lPitch, 0, -lRoll);
+
 		// GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("%f,%f"), AnimInfo.RLFootIK_BlendFactor.Y, AnimInfo.RLFootIK_BlendFactor.X));
 
-		AnimInfo.RFootIK_Rotator = FRotator(atan2f(rNormal.Y, rNormal.Z), -atan2f(rNormal.X, rNormal.Z), 0);
-		AnimInfo.LFootIK_Rotator = FRotator(atan2f(lNormal.Y, lNormal.Z), -atan2f(lNormal.X, lNormal.Z), 0);
-		
-		CalcPelvisZ = -abs(RDistance  - LDistance);
+		CalcPelvisZ += -abs(RDistance  - LDistance);
 		if (abs(CalcPelvisZ) > 50)
 		{
 			CalcPelvisZ = 0;
