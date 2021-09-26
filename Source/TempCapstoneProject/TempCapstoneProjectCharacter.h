@@ -40,6 +40,10 @@ public:
 
 protected:
 
+	// TEMP
+	void ToggleSprint();
+	float SprintMultiplier = 1.0f;
+
 	/** Resets HMD orientation in VR. */
 	void OnResetVR();
 

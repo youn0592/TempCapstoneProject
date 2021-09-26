@@ -25,6 +25,9 @@ public:
 		class UStaticMeshComponent* WheelMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
+		float MinStrideLength = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
 		float MaxStrideLength = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Info")
@@ -67,6 +70,8 @@ protected:
 	// IK variables
 	//	FVector CapsuleBase;
 	//	FVector LegOffset_Right;
+	class USkeletalMeshComponent* CharacterMesh;
+
 	float IK_SquareDistanceSinceReplant = 0;
 	
 	float IK_TriggerFactor = 0;
@@ -79,10 +84,13 @@ protected:
 	FootEnum IK_ReachingFoot = FootEnum::LeftFoot;
 	FVector IK_PredictedCapsuleLocation;
 
+	float CalcPelvisZ = 0;
 public:	
 	
 	UFUNCTION(BlueprintCallable)
 		FProceduralAnimationInfo GetAnimInfo();
+
+	void HandleIK(float DeltaTime);
 
 	void Setup();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -91,7 +99,9 @@ protected:
 
 	void HandleHamsterWheel(float DeltaTime, FVector worldVelocity);
 	void HandleLean(float DeltaTime, FVector worldVelocity);
-	void HandleIK(float DeltaTime);
+
+
+
 	void UpdateIKTarget();
 
 };

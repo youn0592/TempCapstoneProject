@@ -61,6 +61,9 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
+	// TEMP
+	PlayerInputComponent->BindAction("ToggleSprint", IE_Pressed, this, &ATempCapstoneProjectCharacter::ToggleSprint);
+
 	PlayerInputComponent->BindAxis("MoveForward", this, &ATempCapstoneProjectCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ATempCapstoneProjectCharacter::MoveRight);
 
@@ -79,6 +82,22 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnResetVR);
 
+}
+
+// TEMP
+void ATempCapstoneProjectCharacter::ToggleSprint()
+{
+	// lol this is so awful
+	if (SprintMultiplier == 1.0f)
+	{
+		SprintMultiplier = 3.0f;
+		GetCharacterMovement()->MaxWalkSpeed *= SprintMultiplier;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed /= SprintMultiplier;
+		SprintMultiplier = 1.0f;
+	}
 }
 
 //	/* CAPSTONE custom stuff */

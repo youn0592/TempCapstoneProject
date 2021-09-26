@@ -215,17 +215,23 @@ void FAnimNode_PoseToPose::Evaluate_AnyThread(FPoseContext & Output)
 		InPose4.Evaluate(TempPose4);
 		BlendPoses.Add((TempPose4.Pose));
 
-		//InPose1.Evaluate(TempPose);
-		//AnimPose_Current = TempPose.Pose;
+		// InPose1.Evaluate(TempPose);
+		// AnimPose_Current = TempPose.Pose;
 
-		//bInputPosesHaveChanged = false;
+		// bInputPosesHaveChanged = false;
 	//}
 
 	if ((NumPoses > 0))
 	{
 		Alpha = abs(Alpha);
-		float PerPoseAlpha = fmod(Alpha * 4.f, 1.f);
-		lastAnimPoseIndex = (int)(Alpha * 4.0f) % 4;
+		AnimReweight = FMath::Clamp(AnimReweight, -1.f / AnimReweightGrouping, 1.f / AnimReweightGrouping);
+		float ReweightedAlpha = Alpha + AnimReweight * (sin(AnimReweightGrouping  * PI * Alpha)) / PI;
+
+		float PerPoseAlpha = fmod(ReweightedAlpha * 4.f, 1.f);
+		lastAnimPoseIndex = (int)(ReweightedAlpha * 4.0f) % 4;
+
+		//	float PerPoseAlpha = fmod(Alpha * 4.f, 1.f);
+		//	lastAnimPoseIndex = (int)(Alpha * 4.0f) % 4;
 
 		CurrentAnimPoseIndex = (lastAnimPoseIndex + 1) % 4;
 		nextAnimPoseIndex	 = (CurrentAnimPoseIndex + 1) % 4;
@@ -236,17 +242,22 @@ void FAnimNode_PoseToPose::Evaluate_AnyThread(FPoseContext & Output)
 		for (FCompactPoseBoneIndex BoneIndex : OutPose.ForEachBoneIndex())
 		{
 			OutPose[BoneIndex].SetLocation(FMath::Lerp(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetLocation(), PerPoseAlpha));
-			/// OutPose[BoneIndex].SetLocation((FMath::CubicCRSplineInterpSafe(BlendPoses[lastAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[futureAnimPoseIndex][BoneIndex].GetLocation(), 0.5, 0.5, 0.5, 0.5, PerPoseAlpha)));
-			/// OutPose[BoneIndex].SetRotation(FQuat::Slerp(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetRotation(), PerPoseAlpha));
 			OutPose[BoneIndex].SetRotation((SQUADSegment(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[futureAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[lastAnimPoseIndex][BoneIndex].GetRotation(), PerPoseAlpha)));
+			//OutPose[BoneIndex].SetRotation(
+			//		BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation()
+			//);
+
 			OutPose[BoneIndex].SetScale3D(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetScale3D());
 		}
+
+			/// OutPose[BoneIndex].SetLocation((FMath::CubicCRSplineInterpSafe(BlendPoses[lastAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[futureAnimPoseIndex][BoneIndex].GetLocation(), 0.5, 0.5, 0.5, 0.5, PerPoseAlpha)));
 			/// OutPose[BoneIndex] = BlendPoses[CurrentAnimPoseIndex][BoneIndex];
 			/// OutPose[BoneIndex].SetLocation(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetLocation());
 			/// OutPose[BoneIndex].SetLocation(FMath::CubicCRSplineInterp(BlendPoses[lastAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetLocation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetLocation(), 0.5f, 0.5f, 0.5f, 0.5f, PerPoseAlpha));
 			/// FVector outqAxis = FMath::CubicCRSplineInterpSafe(BlendPoses[lastAnimPoseIndex][BoneIndex].GetRotation().GetRotationAxis(), BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation().GetRotationAxis(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetRotation().GetRotationAxis(), BlendPoses[futurePoseIndex][BoneIndex].GetRotation().GetRotationAxis(), Beta, Beta, Beta, Beta, PerPoseAlpha);
 			/// FQuat outq = FQuat(outqAxis, FMath::Lerp(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation().GetAngle(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetRotation().GetAngle(), PerPoseAlpha));
 			/// FQuat outq = FQuat::Slerp(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetRotation(), PerPoseAlpha);
+			/// OutPose[BoneIndex].SetRotation(FQuat::Slerp(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetRotation(), PerPoseAlpha));
 			/// OutPose[BoneIndex].SetRotation(outq);
 			/// OutPose[BoneIndex].SetRotation((SQUADSegment(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[futureAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[lastAnimPoseIndex][BoneIndex].GetRotation(), PerPoseAlpha)));
 			/// OutPose[BoneIndex].SetRotation((FQuat::Squad(BlendPoses[CurrentAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[nextAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[lastAnimPoseIndex][BoneIndex].GetRotation(), BlendPoses[futureAnimPoseIndex][BoneIndex].GetRotation(), PerPoseAlpha)));

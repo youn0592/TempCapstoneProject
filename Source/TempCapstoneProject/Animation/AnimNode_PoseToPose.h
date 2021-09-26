@@ -41,9 +41,17 @@ public:
 	// UPROPERTY(EditAnywhere, EditFixedSize, BlueprintReadWrite)
 		TArray<FCompactPose> BlendPoses;
 
-	/** The float value that controls the alpha blending when the alpha input type is set to 'Float' */
+	/* The float value that controls the alpha blending when the alpha input type is set to 'Float' */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Runtime, meta = (AlwaysAsPin))
-		float Alpha;
+		float Alpha = 0;
+
+	/* This value "redistributes" the weight of the blend animation, making it linger longer on certain frames. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Runtime, meta = (AlwaysAsPin))
+		float AnimReweight = 0;
+
+	/* This value "redistributes" the weight of the blend animation, making it linger longer on certain frames. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Runtime, meta = (AlwaysAsPin))
+		int AnimReweightGrouping = 0;
 
 public:
 

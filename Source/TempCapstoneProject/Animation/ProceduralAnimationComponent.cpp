@@ -3,6 +3,8 @@
 
 #include "ProceduralAnimationComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+
 #include "GameFramework/Character.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
@@ -25,8 +27,8 @@ void UProceduralAnimationComponent::Setup()
 	MovementComp = C->GetCharacterMovement();
 
 	// For debugging animation
-	WheelMesh->SetRelativeScale3D(FVector(MaxStrideLength, 1, MaxStrideLength));
-	WheelMesh->SetRelativeLocationAndRotation(FVector(0, 0, MaxStrideLength * 100 * 0.5f - CapsuleCollider->GetScaledCapsuleHalfHeight()), CapsuleCollider->GetRelativeRotation());
+	WheelMesh->SetRelativeScale3D(FVector(MinStrideLength, 1, MinStrideLength));
+	WheelMesh->SetRelativeLocationAndRotation(FVector(0, 0, MinStrideLength * 100 * 0.5f - CapsuleCollider->GetScaledCapsuleHalfHeight()), CapsuleCollider->GetRelativeRotation());
 	WheelMesh->AttachToComponent(CapsuleCollider, FAttachmentTransformRules::KeepRelativeTransform);
 
 	FVector CapsuleBase = CapsuleCollider->GetRelativeLocation() - FVector(0, 0, CapsuleCollider->GetScaledCapsuleHalfHeight());
@@ -41,6 +43,10 @@ void UProceduralAnimationComponent::Setup()
 	IK_NextL = IK_LastR;
 
 	IK_PredictedCapsuleLocation = CapsuleBase;
+
+	//IK_LFootSocket = MovementComp->GetCharacterOwner()->GetMesh()->GetSocketByName("IK_LFootSocket");
+	//IK_RFootSocket = MovementComp->GetCharacterOwner()->GetMesh()->GetSocketByName("IK_RFootSocket");
+	CharacterMesh = C->GetMesh();
 }
 
 //	void UProceduralAnimationComponent::BeginPlay()
@@ -61,42 +67,59 @@ void UProceduralAnimationComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	if (CapsuleCollider == nullptr)
 		return;
 	
+	CalcPelvisZ = 0;
+	float ClampedDelta = FMath::Clamp(DeltaTime, 0.f, 0.05f);
 
 	FVector Worldvel = CapsuleCollider->GetComponentVelocity();
-	HandleHamsterWheel(DeltaTime, Worldvel);
-	HandleLean(DeltaTime, Worldvel);
-	HandleIK(DeltaTime);
+	HandleHamsterWheel(ClampedDelta, Worldvel);
+	HandleLean(ClampedDelta, Worldvel);
+	HandleIK(ClampedDelta);
+
+	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("%f"), CalcPelvisZ));
+
+	AnimInfo.PelvisDeltaHeight = FMath::FInterpTo(AnimInfo.PelvisDeltaHeight, CalcPelvisZ, ClampedDelta, 10.F);
 
 }
 
 void UProceduralAnimationComponent::HandleHamsterWheel(float DeltaTime, FVector worldVelocity)
 {
-	WheelMesh->SetRelativeLocation(FVector(0, 0, MaxStrideLength * 100 * 0.5f - CapsuleCollider->GetScaledCapsuleHalfHeight()));
-	WheelMesh->SetRelativeScale3D(FVector(MaxStrideLength, 1, MaxStrideLength));
-
+	// EXPOSE worldVelocity.Size() / MovementComp->GetMaxSpeed() AND USE IT TO BLEND BETWEEN WALK AND RUN INSTEAD OF DOING IT LIKE AN IDIOT
 	FVector WorldVel2D = worldVelocity;
 	WorldVel2D.Z = 0;
 
-	float WheelRotationThisFrame = WorldVel2D.Size() * 0.01f * DeltaTime * 180.f / (MaxStrideLength * 0.5f * PI);
-	float PercentAroundWheelThisFrame = WorldVel2D.Size() * 0.01f * DeltaTime / (2 * PI * MaxStrideLength * 0.5f);
+	AnimInfo.WalkRunBlend = WorldVel2D.Size2D() / MovementComp->GetMaxSpeed();
+	float StrideLength = FMath::Lerp(MinStrideLength, MaxStrideLength, AnimInfo.WalkRunBlend);
+	WheelMesh->SetRelativeLocation(FVector(0, 0, StrideLength * 100 * 0.5f - CapsuleCollider->GetScaledCapsuleHalfHeight()));
+	WheelMesh->SetRelativeScale3D(FVector(StrideLength, 1, StrideLength));
+
+
+	float WheelRotationThisFrame = WorldVel2D.Size() * 0.01f * DeltaTime * 180.f / (StrideLength * 0.5f * PI);
+	float PercentAroundWheelThisFrame = WorldVel2D.Size() * 0.01f * DeltaTime / (2 * PI * StrideLength * 0.5f);
 
 	AnimInfo.PoseBlendAlpha += PercentAroundWheelThisFrame;
-	
-	IK_TriggerFactor += 2 * PercentAroundWheelThisFrame;
-	
-	if (IK_TriggerFactor > 0.5f)
+
+	if (AnimInfo.WalkRunBlend < 0.005f)
 	{
-		IK_MustReplant = true;
-		IK_TriggerFactor = 0.f;
+		if(AnimInfo.PoseBlendAlpha <= 0.5f)
+		AnimInfo.PoseBlendAlpha = FMath::Lerp(AnimInfo.PoseBlendAlpha, 0.f, DeltaTime);
+		else
+		AnimInfo.PoseBlendAlpha = FMath::Lerp(AnimInfo.PoseBlendAlpha, 1.f, DeltaTime);
 	}
 
-	AnimInfo.RFootIK_BlendFactor = FMath::Clamp(sinf(2 * PI * AnimInfo.PoseBlendAlpha), 0.f, 1.f);
-	AnimInfo.LFootIK_BlendFactor = FMath::Clamp(sinf(PI * (2 * AnimInfo.PoseBlendAlpha + 0.5f)), 0.f, 1.f);
+	//	IK_TriggerFactor += 2 * PercentAroundWheelThisFrame;
+	//	
+	//	if (IK_TriggerFactor > 0.5f)
+	//	{
+	//		IK_MustReplant = true;
+	//		IK_TriggerFactor = 0.f;
+	//	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("%f"), AnimInfo.LFootIK_BlendFactor));
-	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("%f"), AnimInfo.RFootIK_BlendFactor));
+	//	AnimInfo.RFootIK_BlendFactor = FMath::Clamp(sinf(2 * PI * AnimInfo.PoseBlendAlpha), 0.f, 1.f);
+	//	AnimInfo.LFootIK_BlendFactor = FMath::Clamp(sinf(PI * (2 * AnimInfo.PoseBlendAlpha + 0.5f)), 0.f, 1.f);
 
-	AnimInfo.PoseBlendAlpha = fmod(AnimInfo.PoseBlendAlpha, 1.0f);
+	// GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("%f"), AnimInfo.RFootIK_BlendFactor));
+
+	// AnimInfo.PoseBlendAlpha = fmod(AnimInfo.PoseBlendAlpha, 1.0f);
 
 	WheelMesh->AddLocalRotation(FRotator(-WheelRotationThisFrame, 0, 0));
 }
@@ -104,7 +127,7 @@ void UProceduralAnimationComponent::HandleHamsterWheel(float DeltaTime, FVector 
 void UProceduralAnimationComponent::HandleLean(float DeltaTime, FVector worldVelocity)
 {
 
-//--Calculate Velocity change from last frame. Store info as "AccelVector" by incorporating the amount of time passed
+	//--Calculate Velocity change from last frame. Store info as "AccelVector" by incorporating the amount of time passed
 	VelocityChange = worldVelocity - OldVelocity;
 	VelocityChange = FVector(
 		FVector::DotProduct(VelocityChange, CapsuleCollider->GetForwardVector()),
@@ -114,94 +137,153 @@ void UProceduralAnimationComponent::HandleLean(float DeltaTime, FVector worldVel
 
 	FVector AccelVector = 50 * VelocityChange * DeltaTime;
 
-	OldVelocity = worldVelocity;
-//--
 
-//--Rescale the amount of forward leaning that occurs going forward vs backwards.
+	OldVelocity = worldVelocity;
+	//--
+
+	//--Rescale the amount of forward leaning that occurs going forward vs backwards.
 	float XLeanScale = AccelVector.X < 0 ? 1.f : 2.f;
 	AccelVector.X *= XLeanScale;
-//--
+	//--
 
-//--Lerp LeanOvershoot towards the AccelVector. Faster forwards leaning correction if we're slowing down, slower if we're speeding up (RECONSIDER?) (TEST FOR FRAME DEPENDANCY ISSUES)
+	//--Lerp LeanOvershoot towards the AccelVector. Faster forwards leaning correction if we're slowing down, slower if we're speeding up (RECONSIDER?) (TEST FOR FRAME DEPENDANCY ISSUES)
 	float OvershootFactorCoefficient = 2.f;
 
 	LeanOvershoot.X = FMath::Lerp(LeanOvershoot.X, AccelVector.X, FMath::Clamp(XLeanScale * OvershootFactorCoefficient * DeltaTime, 0.f, 1.f));
 	LeanOvershoot.Y = FMath::Lerp(LeanOvershoot.Y, AccelVector.Y, FMath::Clamp(OvershootFactorCoefficient * DeltaTime, 0.f, 1.f));
 	LeanOvershoot.Z = FMath::Lerp(LeanOvershoot.Z, AccelVector.Z, FMath::Clamp(OvershootFactorCoefficient * DeltaTime, 0.f, 1.f));
 
-//--Play with this to scale leaning caused by jumping.
+	// CalcPelvisZ = FMath::Clamp(FMath::Lerp(CalcPelvisZ, LeanOvershoot.Z, FMath::Clamp(10 * DeltaTime, 0.f, 1.f) ), -20.f,20.f);
+
+	//--Play with this to scale leaning caused by jumping.
 	float FinJumpLeanScale = AccelVector.Z < 0 ? 1.f : 1.f;
 
-//--Calculate final Lean amount by lerping to the sum of velocity-based, acceleration-based and Jump-based leaning.
-//--Clamped velocity-based side-leaning and jump based leaning. (RECONSIDER CLAMPING OR EXPOSE SOME OF THOSE VALUES) (TEST FOR FRAME DEPENDANCY ISSUES)
+	//--Calculate final Lean amount by lerping to the sum of velocity-based, acceleration-based and Jump-based leaning.
+	//--Clamped velocity-based side-leaning and jump based leaning. (RECONSIDER CLAMPING OR EXPOSE SOME OF THOSE VALUES) (TEST FOR FRAME DEPENDANCY ISSUES)
 	AnimInfo.Lean = FMath::Lerp
 	(
-		AnimInfo.Lean,
-		LeanScale * FRotator
-		(
-			FVector::DotProduct(worldVelocity, CapsuleCollider->GetForwardVector()),
-			FMath::Clamp(FVector::DotProduct(worldVelocity, CapsuleCollider->GetRightVector()), -LeanLimit, LeanLimit),
-			0
-		)
-		// + FRotator(LeanOvershoot.X + LeanOvershoot.Z, 0, LeanOvershoot.Y),
-
-		+ FRotator(LeanOvershootScale * LeanOvershoot.X + JumpLeanScale * FinJumpLeanScale * FMath::Clamp(LeanOvershoot.Z, -10.f, 10.f), LeanOvershootScale * LeanOvershoot.Y, 0),
-
-		FMath::Clamp(10.0f * DeltaTime, 0.f, 1.f)
+			AnimInfo.Lean
+		,
+			LeanScale * FRotator
+			(
+				FMath::Clamp(FVector::DotProduct(worldVelocity, CapsuleCollider->GetRightVector()), -LeanLimit, LeanLimit),
+				0,
+				FVector::DotProduct(worldVelocity, CapsuleCollider->GetForwardVector())
+			)
+			+ 
+			FRotator
+			(
+			FMath::Clamp(LeanOvershootScale * LeanOvershoot.Y, -30.f, 30.f),
+			0,
+			FMath::Clamp( LeanOvershootScale * LeanOvershoot.X + JumpLeanScale * FinJumpLeanScale * FMath::Clamp(LeanOvershoot.Z, -10.f, 10.f) , -30.f , 30.f)
+			)
+		,
+			FMath::Clamp(10.0f * DeltaTime, 0.f, 1.f)
 	);
 }
 
 void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 {
-	FVector CapsuleBase = CapsuleCollider->GetRelativeLocation() - FVector(0, 0, CapsuleCollider->GetScaledCapsuleHalfHeight());
-	IK_PredictedCapsuleLocation = CapsuleBase + CapsuleCollider->GetComponentVelocity() * IK_PredictionRate + MovementComp->GetCurrentAcceleration() * IK_PredictionRate * IK_PredictionRate;
+	float RDistance = 900.0f;
+	float LDistance = 900.0f;
 
-	// IK_SquareDistanceSinceReplant += CapsuleCollider->GetComponentVelocity().Size() * 0.01f * DeltaTime + DeltaTime * 5;
-	IK_SquareDistanceSinceReplant += DeltaTime * (5 / FMath::Clamp(CapsuleCollider->GetComponentVelocity().SizeSquared(),0.f,5.f));
+	float RFinalAlpha = 0.0f;
+	float LFinalAlpha = 0.0f;
 
-	//GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("%f"), IK_SquareDistanceSinceReplant));
+	float MinDistanceFromRoot = 48.f;
 
-	//if (> IK_ReplantRate)
-	if(IK_MustReplant || IK_SquareDistanceSinceReplant > IK_ReplantRate)
+	bool lhit, rhit = false;
+	FHitResult hit;
+	
+	FVector lfootRayOrigin = CharacterMesh->GetSocketTransform(FName("IK_LFootSocket")).GetLocation();
+	FVector rfootRayOrigin = CharacterMesh->GetSocketTransform(FName("IK_RFootSocket")).GetLocation();
+	
+	FVector lNormal = FVector::UpVector;
+	FVector rNormal = FVector::UpVector;
+
+	float RayRange = CapsuleCollider->GetScaledCapsuleHalfHeight() + 20 * MinDistanceFromRoot;
+	
+	lfootRayOrigin.Z = rfootRayOrigin.Z = CapsuleCollider->GetRelativeLocation().Z;
+	
+	FCollisionQueryParams qp;
+	qp.AddIgnoredActor(GetOwner());
+	
+	if (GetWorld()->LineTraceSingleByChannel(hit, lfootRayOrigin, lfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
 	{
-		UpdateIKTarget();
-		IK_MustReplant = false;
-		GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::Cyan, TEXT("REPLANT"));
-		IK_SquareDistanceSinceReplant = 0;
+		DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
+		LDistance = hit.Distance - 5;
+		lNormal = hit.Normal;
+		lhit = true;
+	}
+	
+	if (GetWorld()->LineTraceSingleByChannel(hit, rfootRayOrigin, rfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
+	{
+		DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
+		RDistance = hit.Distance - 5;
+		rNormal = hit.Normal;
+		rhit = true;
+	}
+	
+
+	if (lhit || rhit)
+	{
+
+		FVector rootOrigin = CapsuleCollider->GetRelativeLocation();
+
+		FVector newOriginL = FVector(rfootRayOrigin.X, rfootRayOrigin.Y, rootOrigin.Z);
+		FVector newOriginR = FVector(lfootRayOrigin.X, lfootRayOrigin.Y, rootOrigin.Z);
+
+		float Dt = rootOrigin.Z - (CapsuleCollider->GetRelativeLocation().Z - CapsuleCollider->GetScaledCapsuleHalfHeight());
+
+		//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("%f"), (Dt - MinDistanceFromRoot)));
+		//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Yellow, FString::Printf(TEXT("%f"), RDistance));
+		//	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("%f"), LDistance));
+
+		RFinalAlpha = RDistance / (Dt - MinDistanceFromRoot) - 2.f ;
+		LFinalAlpha = LDistance / (Dt - MinDistanceFromRoot) - 2.f ;
+
+		// GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("%f,%f"), AnimInfo.RLFootIK_BlendFactor.Y, AnimInfo.RLFootIK_BlendFactor.X));
+
+		AnimInfo.RFootIK_Rotator = FRotator(atan2f(rNormal.Y, rNormal.Z), -atan2f(rNormal.X, rNormal.Z), 0);
+		AnimInfo.LFootIK_Rotator = FRotator(atan2f(lNormal.Y, lNormal.Z), -atan2f(lNormal.X, lNormal.Z), 0);
+		
+		CalcPelvisZ = -abs(RDistance  - LDistance);
+		if (abs(CalcPelvisZ) > 50)
+		{
+			CalcPelvisZ = 0;
+			RFinalAlpha = LFinalAlpha = 0;
+		}
+	}
+	else {
+		CalcPelvisZ = 0;
 	}
 
-	DrawDebugSphere(GetWorld(), IK_NextL.GetLocation(), 10.0f, 8, FColor::Cyan);
-	DrawDebugSphere(GetWorld(), IK_NextR.GetLocation(), 10.0f, 8, FColor::Red);
-
-	DrawDebugSphere(GetWorld(), IK_LastL.GetLocation(), 10.0f, 8, FColor::Black);
-	DrawDebugSphere(GetWorld(), IK_LastR.GetLocation(), 10.0f, 8, FColor::Black);
-
-	DrawDebugSphere(GetWorld(), IK_PredictedCapsuleLocation, 10.0f, 8, FColor::White);
-	
+	AnimInfo.RLFootIK_BlendFactor.X = RFinalAlpha;
+	AnimInfo.RLFootIK_BlendFactor.Y = LFinalAlpha;
 }
 
 void UProceduralAnimationComponent::UpdateIKTarget()
 {
-	FVector targetPos = IK_PredictedCapsuleLocation;
-
-	switch (IK_ReachingFoot)
-	{
-		case FootEnum::LeftFoot:
-			targetPos -= CapsuleCollider->GetRightVector() * StepWidth;
-			IK_LastL = IK_NextL;
-			IK_NextL.SetLocation(targetPos);
-			AnimInfo.LFootIK_Target = IK_NextL;
-			IK_ReachingFoot = FootEnum::RightFoot;
-			break;
-
-		case FootEnum::RightFoot:
-			targetPos += CapsuleCollider->GetRightVector() * StepWidth;
-			IK_LastR = IK_NextR;
-			IK_NextR.SetLocation(targetPos);
-			AnimInfo.RFootIK_Target = IK_NextR;
-			IK_ReachingFoot = FootEnum::LeftFoot;
-			break;
-	}
+	//	FVector targetPos = IK_PredictedCapsuleLocation;
+	//	
+	//	switch (IK_ReachingFoot)
+	//	{
+	//		case FootEnum::LeftFoot:
+	//			targetPos -= CapsuleCollider->GetRightVector() * StepWidth;
+	//			IK_LastL = IK_NextL;
+	//			IK_NextL.SetLocation(targetPos);
+	//			AnimInfo.LFootIK_Target = IK_NextL;
+	//			IK_ReachingFoot = FootEnum::RightFoot;
+	//			break;
+	//	
+	//		case FootEnum::RightFoot:
+	//			targetPos += CapsuleCollider->GetRightVector() * StepWidth;
+	//			IK_LastR = IK_NextR;
+	//			IK_NextR.SetLocation(targetPos);
+	//			AnimInfo.RFootIK_Target = IK_NextR;
+	//			IK_ReachingFoot = FootEnum::LeftFoot;
+	//			break;
+	//	}
 
 
 
@@ -218,6 +300,45 @@ void UProceduralAnimationComponent::UpdateIKTarget()
 
 // CODE DUMP:
 
+
+			// DrawDebugSphere(GetWorld(), lfoot.GetLocation(), 3.0f, 8, FColor::Yellow);
+			// DrawDebugSphere(GetWorld(), rfoot.GetLocation(), 3.0f, 8, FColor::Yellow);
+			// 
+			// DrawDebugSphere(GetWorld(), lfoot.GetLocation() + lfoot.GetRotation().GetForwardVector() * 20.f, 3.0f, 8, FColor::Red);
+			// DrawDebugSphere(GetWorld(), rfoot.GetLocation() + rfoot.GetRotation().GetForwardVector() * 20.f, 3.0f, 8, FColor::Red);
+
+			// DrawDebugSphere(GetWorld(), lfoot + FVector::DownVector * 20.f, 3.0f, 8, FColor::Red);
+			// DrawDebugSphere(GetWorld(), rfoot + FVector::DownVector * 20.f, 3.0f, 8, FColor::Red);
+
+			// AnimInfo.PelvisDeltaHeight += FMath::Lerp
+
+	// GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Yellow, FString::Printf(TEXT("%f,%f,%f"), worldVelocity.X, worldVelocity.Y, worldVelocity.Z));
+
+	//  FVector CapsuleBase = CapsuleCollider->GetRelativeLocation() - FVector(0, 0, CapsuleCollider->GetScaledCapsuleHalfHeight());
+	//	IK_PredictedCapsuleLocation = CapsuleBase + CapsuleCollider->GetComponentVelocity() * IK_PredictionRate + MovementComp->GetCurrentAcceleration() * IK_PredictionRate * IK_PredictionRate;
+	//	
+	//	// IK_SquareDistanceSinceReplant += CapsuleCollider->GetComponentVelocity().Size() * 0.01f * DeltaTime + DeltaTime * 5;
+	//	IK_SquareDistanceSinceReplant += DeltaTime * (5 / FMath::Clamp(CapsuleCollider->GetComponentVelocity().SizeSquared(),0.f,5.f));
+	//	
+	//	//GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("%f"), IK_SquareDistanceSinceReplant));
+	//	
+	//	//if (> IK_ReplantRate)
+	//	if(IK_MustReplant || IK_SquareDistanceSinceReplant > IK_ReplantRate)
+	//	{
+	//		UpdateIKTarget();
+	//		IK_MustReplant = false;
+	//		GEngine->AddOnScreenDebugMessage(-1, 0.05f, FColor::Cyan, TEXT("REPLANT"));
+	//		IK_SquareDistanceSinceReplant = 0;
+	//	}
+	//	
+	//	DrawDebugSphere(GetWorld(), IK_NextL.GetLocation(), 10.0f, 8, FColor::Cyan);
+	//	DrawDebugSphere(GetWorld(), IK_NextR.GetLocation(), 10.0f, 8, FColor::Red);
+	//	
+	//	DrawDebugSphere(GetWorld(), IK_LastL.GetLocation(), 10.0f, 8, FColor::Black);
+	//	DrawDebugSphere(GetWorld(), IK_LastR.GetLocation(), 10.0f, 8, FColor::Black);
+	//	
+	//	DrawDebugSphere(GetWorld(), IK_PredictedCapsuleLocation, 10.0f, 8, FColor::White);
+	// 
 //	if (GEngine)
 //	{
 //		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("%f"), LeanLimit));
