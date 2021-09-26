@@ -19,8 +19,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactive Object")
 	AActor* TargetActor;
 
-protected:
-
 	bool bIsActive = false;
 
 public:	
