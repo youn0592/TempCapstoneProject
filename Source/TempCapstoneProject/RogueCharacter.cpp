@@ -23,6 +23,11 @@ void ARogueCharacter::BeginPlay()
 	RogueShield->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
 }
 
+//void ARogueCharacter::SpawnShield()
+//{
+//
+//}
+
 void ARogueCharacter::Dash()
 {
 	Server_Dash();
@@ -69,21 +74,24 @@ void ARogueCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInp
 
 	// Input for Holding the Shield up
 	PlayerInputComponent->BindAction("ShieldPlatform", IE_Pressed, this, &ARogueCharacter::ShieldPlatform);
-	PlayerInputComponent->BindAction("ShieldPlatform", IE_Released, this, &ARogueCharacter::ShieldPlatform);
+	//PlayerInputComponent->BindAction("ShieldPlatform", IE_Released, this, &ARogueCharacter::ShieldPlatform);
 }
 
 void ARogueCharacter::ShieldPlatform()
 {
-	//Server_ShieldPlatform();
+	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, FString::Printf(TEXT("%d"), m_IsShieldVisible));
+	Server_ShieldPlatform();
 	m_IsShieldVisible = !m_IsShieldVisible;
 
-	if (RogueShield)
-		RogueShield->ShieldEnable(m_IsShieldVisible);
+	/*if (RogueShield)
+		RogueShield->ShieldEnable(m_IsShieldVisible);*/
 
 }
 
 void ARogueCharacter::Server_ShieldPlatform_Implementation()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("%d"), m_IsShieldVisible));
+
 	m_IsShieldVisible = !m_IsShieldVisible;
 	if (RogueShield)
 		RogueShield->ShieldEnable(m_IsShieldVisible);

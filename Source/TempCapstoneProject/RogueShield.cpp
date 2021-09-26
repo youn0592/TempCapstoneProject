@@ -43,20 +43,19 @@ void ARogueShield::ShieldEnable(bool e)
 	Server_ShieldEnable(e);
 
 	// Works on client but not on Server. Tried from both sides.
-	//m_IsVisible = e;
-	SetActorHiddenInGame(!e); // Actor is being Replicated
-	SetActorEnableCollision(e);
-	SetActorTickEnabled(e);
-	ShieldMesh->SetHiddenInGame(!e); // Mesh is being Replicated
+	//SetActorHiddenInGame(!e); // Actor is being Replicated
+	//SetActorEnableCollision(e);
+	//SetActorTickEnabled(e);
+	//ShieldMesh->SetVisibility(e); // Mesh is being Replicated
 }
 
 void ARogueShield::Server_ShieldEnable_Implementation(bool e)
 {
-	//m_IsVisible = e;
-	SetActorHiddenInGame(!e);
+	// Works on client but not on Server. Tried from both sides.
+	SetActorHiddenInGame(!e); // Actor is being Replicated
 	SetActorEnableCollision(e);
 	SetActorTickEnabled(e);
-	ShieldMesh->SetHiddenInGame(!e);
+	ShieldMesh->SetHiddenInGame(!e, true); // Mesh is being Replicated	
 }
 
 // Called when the game starts or when spawned

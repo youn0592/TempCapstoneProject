@@ -41,6 +41,11 @@ protected:
 	UPROPERTY(Replicated)
 	bool m_IsShieldVisible = false;
 
+	//void SpawnShield();
+
+	/*UFUNCTION(NetMulticaast, Reliable)
+		void NMC_SpawnShield();*/
+
 	void ShieldPlatform();
 
 	UFUNCTION(Server, Reliable)
