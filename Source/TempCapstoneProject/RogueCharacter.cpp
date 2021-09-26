@@ -15,22 +15,13 @@ ARogueCharacter::ARogueCharacter()
 
 void ARogueCharacter::Dash()
 {
-	if (HasAuthority())
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, TEXT("Got called on Server"));
-	}
-	Server_Dash_Implementation();
+	Server_Dash();
 }
 
 void ARogueCharacter::Server_Dash_Implementation()
 {
-	/*if (m_CanDash == false)
-		return;*/
-
-	if (HasAuthority())
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, TEXT("Got called on Server"));
-	}
+	if (m_CanDash == false)
+		return;
 
 	m_CanDash = false;
 	m_InitialVel = GetCharacterMovement()->Velocity;
