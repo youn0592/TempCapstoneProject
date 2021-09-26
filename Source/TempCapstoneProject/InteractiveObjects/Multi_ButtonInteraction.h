@@ -58,6 +58,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE bool GetTargetActive() { return GetTargetInteractive()->bIsActive; };
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE USkeletalMeshComponent* GetTargetMesh() { return GetTargetInteractive()->ObjectMesh; };
+
 private:
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* SceneRoot;
