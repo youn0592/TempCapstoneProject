@@ -43,7 +43,7 @@ protected:
 	void LookUpAtRate(float Rate);
 
 
-	virtual void BeginPlay() override;
+	virtual void BeginPlay();
 
 public:
 	/** Returns CameraBoom subobject **/

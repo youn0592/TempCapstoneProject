@@ -7,10 +7,20 @@
 #include "GameFramework/MovementComponent.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
+#include "RogueShield.h"
 
 ARogueCharacter::ARogueCharacter()
 {
 	SetReplicates(true);
+}
+
+void ARogueCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Create the shield
+	RogueShield = GetWorld()->SpawnActor<ARogueShield>(GetCapsuleComponent()->GetRelativeLocation() + FVector(0.0f, 0.0f, 100.0f), GetCapsuleComponent()->GetRelativeRotation());
+	RogueShield->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
 }
 
 void ARogueCharacter::Dash()
@@ -56,4 +66,32 @@ void ARogueCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInp
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ARogueCharacter::Dash);
+
+	// Input for Holding the Shield up
+	PlayerInputComponent->BindAction("ShieldPlatform", IE_Pressed, this, &ARogueCharacter::ShieldPlatform);
+	PlayerInputComponent->BindAction("ShieldPlatform", IE_Released, this, &ARogueCharacter::ShieldPlatform);
+}
+
+void ARogueCharacter::ShieldPlatform()
+{
+	//Server_ShieldPlatform();
+	m_IsShieldVisible = !m_IsShieldVisible;
+
+	if (RogueShield)
+		RogueShield->ShieldEnable(m_IsShieldVisible);
+
+}
+
+void ARogueCharacter::Server_ShieldPlatform_Implementation()
+{
+	m_IsShieldVisible = !m_IsShieldVisible;
+	if (RogueShield)
+		RogueShield->ShieldEnable(m_IsShieldVisible);
+}
+
+void ARogueCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ARogueCharacter, RogueShield);
+	DOREPLIFETIME(ARogueCharacter, m_IsShieldVisible);
 }

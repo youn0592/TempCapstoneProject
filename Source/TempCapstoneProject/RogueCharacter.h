@@ -30,9 +30,21 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 		void Server_Dash();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield", Replicated)
+		class ARogueShield* RogueShield;
 protected:
+	virtual void BeginPlay() override;
+
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(Replicated)
+	bool m_IsShieldVisible = false;
+
+	void ShieldPlatform();
+
+	UFUNCTION(Server, Reliable)
+		void Server_ShieldPlatform();
 private:
 	bool m_CanDash = true;
 	FVector m_InitialVel;
