@@ -21,6 +21,11 @@ public:
 
 	bool bIsActive = false;
 
+protected:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactive Object")
+	class USkeletalMeshComponent* ObjectMesh;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -32,9 +37,6 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "ReceiveInteract"))
 	void ReceiveInteract();
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE AActor* GetTargetActor() { return TargetActor; };
 
 protected:
 	// Called when the game starts or when spawned
@@ -49,9 +51,6 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Interactive Object")
 	class UBoxComponent* ButtonCollider;
-
-	UPROPERTY(EditAnywhere, Category = "Interactive Object")
-	class USkeletalMeshComponent* ObjectMesh;
 
 	UPROPERTY(EditAnywhere, Category = "Interactive Object")
 	class UWidgetComponent* InteractionWidget;

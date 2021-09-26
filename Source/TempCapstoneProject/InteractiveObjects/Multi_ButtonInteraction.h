@@ -42,12 +42,6 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "ReceiveInteract"))
 	void ReceiveInteract();
 
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE AActor* GetTargetActor() { return TargetActor; };
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE AMulti_ButtonInteraction* GetTargetInteractive() { return TargetInteractive; };
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -56,10 +50,10 @@ protected:
 	FORCEINLINE bool GetOwnerActive() { return bIsActive; };
 
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE bool GetTargetActive() { return GetTargetInteractive()->bIsActive; };
+	FORCEINLINE bool GetTargetActive() { return TargetInteractive->bIsActive; }; 
 
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE USkeletalMeshComponent* GetTargetMesh() { return GetTargetInteractive()->ObjectMesh; };
+	FORCEINLINE USkeletalMeshComponent* GetTargetMesh() { return TargetInteractive->ObjectMesh; };
 
 private:
 	UPROPERTY(EditAnywhere)
