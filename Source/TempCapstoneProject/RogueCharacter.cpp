@@ -6,34 +6,50 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/MovementComponent.h"
 #include "GameFramework/Character.h"
+#include "Net/UnrealNetwork.h"
+
+ARogueCharacter::ARogueCharacter()
+{
+	SetReplicates(true);
+}
 
 void ARogueCharacter::Dash()
+{
+	Server_Dash();
+}
+
+void ARogueCharacter::Server_Dash_Implementation()
 {
 	if (m_CanDash == false)
 		return;
 
 	m_CanDash = false;
+	m_InitialVel = GetCharacterMovement()->Velocity;
+	m_GroundFriction = GetCharacterMovement()->GroundFriction;
 
 	// Launches the character in forward direction.
+	GetCharacterMovement()->GroundFriction = 0.f; // Remove Friction so that Distance in air = Distance on ground during dash.
 	LaunchCharacter((DashDistance / DashTime) * GetCapsuleComponent()->GetForwardVector(), false, false);
 
-	FTimerDelegate TimerDelegate;
-	TimerDelegate.BindLambda([&]
-		{
-			GetMovementComponent()->StopMovementImmediately();
-		});
+	FTimerDelegate EndDashDelegate;
+	EndDashDelegate.BindLambda([&] // Gets called after LaunchCharacter
+	{
+		GetMovementComponent()->StopMovementImmediately();
+		GetMovementComponent()->Velocity = m_InitialVel;
+		GetCharacterMovement()->GroundFriction = m_GroundFriction;
+	});
 
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, TimerDelegate, DashTime, false);
+	FTimerHandle DashDurationHandle;
+	GetWorld()->GetTimerManager().SetTimer(DashDurationHandle, EndDashDelegate, DashTime, false);
 
-	FTimerDelegate TimerDelegate2;
-	TimerDelegate2.BindLambda([&]
-		{
-			m_CanDash = true;
-		});
+	FTimerDelegate DashResetDelegate; // Gets called after Dash
+	DashResetDelegate.BindLambda([&]
+	{
+		m_CanDash = true;
+	});
 
-	FTimerHandle TimerHandle2;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle2, TimerDelegate2, DashReset, false);
+	FTimerHandle DashResetHandle;
+	GetWorld()->GetTimerManager().SetTimer(DashResetHandle, DashResetDelegate, DashReset, false);
 }
 
 void ARogueCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)

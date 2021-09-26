@@ -15,6 +15,8 @@ class TEMPCAPSTONEPROJECT_API ARogueCharacter : public ATempCapstoneProjectChara
 	GENERATED_BODY()
 	
 public:
+	ARogueCharacter();
+
 	UPROPERTY(EditAnywhere)
 		float DashDistance;
 
@@ -24,10 +26,15 @@ public:
 	UPROPERTY(EditAnywhere)
 		float DashReset;
 
+	void Dash();
+	
+	UFUNCTION(Server, Reliable)
+		void Server_Dash();
 protected:
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
 	bool m_CanDash = true;
-	void Dash();
+	FVector m_InitialVel;
+	float m_GroundFriction;
 };
