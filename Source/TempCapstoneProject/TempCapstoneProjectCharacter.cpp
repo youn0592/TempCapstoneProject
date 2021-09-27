@@ -12,10 +12,13 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InteractionInterface.h"
 
+#include "Animation/ProceduralAnimationComponent.h"
+
 #include "TempCapstoneProjectGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "DummyPawn.h"
 
+#include "Net/UnrealNetwork.h"
 //////////////////////////////////////////////////////////////////////////
 // ATempCapstoneProjectCharacter
 
@@ -23,13 +26,6 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-
-	static ConstructorHelpers::FClassFinder<APawn> DummyLocalBP_Getter(TEXT("/Game/Blueprints/Characters/BP_DummyPawn"));
-
-	if (DummyLocalBP_Getter.Class != NULL)
-	{
-		pDummyBP = DummyLocalBP_Getter.Class;
-	}
 
 	//	DummyController = CreateDefaultSubobject<APlayerController>(TEXT("dummyController"));
 
@@ -60,7 +56,7 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	//	UGameplayStatics::CreatePlayer(GetWorld(), -1);
+	ProcAnimComp = CreateDefaultSubobject<UProceduralAnimationComponent>(TEXT("ProcAnimComp"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
@@ -68,6 +64,8 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Interaction Box"));
 	InteractionBox->SetBoxExtent(FVector(140.0f, 140.0f, 65.0f));
 	InteractionBox->SetupAttachment(RootComponent);
+
+	SetReplicates(true);
 }
 
 //	void ATempCapstoneProjectCharacter::SpawnDummy(APlayerController* dummyController)
@@ -82,6 +80,8 @@ void ATempCapstoneProjectCharacter::BeginPlay()
 	{
 		UGameplayStatics::CreatePlayer(GetWorld(), -1);
 	}
+
+	ProcAnimComp->Setup();
 
 	//	if (GetLocalRole() == ROLE_AutonomousProxy)
 	//	{
@@ -135,13 +135,13 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 void ATempCapstoneProjectCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
-
 	CheckClosestInteraction();
 }
 
 void ATempCapstoneProjectCharacter::OnInteract()
 {
-	Server_OnInteract();
+	if (Interface)
+		Server_OnInteract();
 }
 
 void ATempCapstoneProjectCharacter::Server_OnInteract_Implementation()
@@ -169,6 +169,9 @@ void ATempCapstoneProjectCharacter::CheckClosestInteraction()
 
 	for (auto CurrentActor : OverlappingActors)
 	{
+		//	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Green, CurrentActor->GetName());
+		//	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, CurrentActor->GetName());
+
 		if (GetDistanceTo(CurrentActor) < GetDistanceTo(ClosestActor))
 		{
 			ClosestActor = CurrentActor;
@@ -223,4 +226,10 @@ void ATempCapstoneProjectCharacter::MoveRight(float Value)
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
 	}
+}
+
+void ATempCapstoneProjectCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ATempCapstoneProjectCharacter, ProcAnimComp);
 }

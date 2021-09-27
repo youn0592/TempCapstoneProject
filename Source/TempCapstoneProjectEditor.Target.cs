@@ -10,5 +10,6 @@ public class TempCapstoneProjectEditorTarget : TargetRules
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		ExtraModuleNames.Add("TempCapstoneProject");
+		ExtraModuleNames.Add("TempCapstoneProjectEditor");
 	}
 }

@@ -4,12 +4,15 @@
 #include "ButtonInteraction.h"
 #include "Components/WidgetComponent.h"
 #include "Components/BoxComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AButtonInteraction::AButtonInteraction()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	SetReplicates(true);
 
     SceneRoot = CreateDefaultSubobject<USceneComponent>("Scene Root");
     RootComponent = SceneRoot;
@@ -39,9 +42,13 @@ void AButtonInteraction::Tick(float DeltaTime)
 
 void AButtonInteraction::Interact()
 {
+	NMC_Interact();
+}
+
+void AButtonInteraction::NMC_Interact_Implementation()
+{
 	// Toggle Active State
 	bIsActive = !bIsActive;
-
 	ReceiveInteract();
 }
 
@@ -55,3 +62,8 @@ void AButtonInteraction::HideInteractionWidget()
 	InteractionWidget->SetVisibility(false);
 }
 
+void AButtonInteraction::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AButtonInteraction, bIsActive);
+}

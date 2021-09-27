@@ -3,3 +3,7 @@
 
 #include "PaladinCharacter.h"
 
+ECharacterType APaladinCharacter::GetCharacterType()
+{ 
+    return ECharacterType::Paladin; 
+}

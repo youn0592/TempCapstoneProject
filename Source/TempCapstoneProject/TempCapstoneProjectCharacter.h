@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "TempCapstoneProject.h"
 #include "TempCapstoneProjectCharacter.generated.h"
 
 UCLASS(config=Game)
@@ -11,25 +12,25 @@ class ATempCapstoneProjectCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-	// friend class DummyPawn;
-	// class APlayerController* DummyController;
-
-	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
 
-	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
-	TSubclassOf<APawn> pDummyBP;
-
 public:
+
 	ATempCapstoneProjectCharacter();
 
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Animation Component")
+	class UProceduralAnimationComponent* ProcAnimComp;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UProceduralAnimationComponent* GetProceduralAnimComponent() { return ProcAnimComp; };
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseTurnRate;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
@@ -42,14 +43,15 @@ protected:
 	void TurnAtRate(float Rate);
 	void LookUpAtRate(float Rate);
 
-
-	virtual void BeginPlay();
-
 public:
-	/** Returns CameraBoom subobject **/
+
+	virtual void BeginPlay() override;
+
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	
+	UFUNCTION(BlueprintCallable)
+	virtual ECharacterType GetCharacterType() { return ECharacterType::NONE; }
 
 	virtual void Tick(float DeltaSeconds) override;
 

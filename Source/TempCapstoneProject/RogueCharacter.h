@@ -4,17 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "TempCapstoneProjectCharacter.h"
+#include "TempCapstoneProject.h"
 #include "RogueCharacter.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class TEMPCAPSTONEPROJECT_API ARogueCharacter : public ATempCapstoneProjectCharacter
 {
 	GENERATED_BODY()
 	
 public:
+
 	ARogueCharacter();
 
 	UPROPERTY(EditAnywhere)
@@ -31,6 +30,12 @@ public:
 	UFUNCTION(Server, Reliable)
 		void Server_Dash();
 
+	ECharacterType GetCharacterType() override;
+
+	UFUNCTION(BlueprintCallable)
+	bool GetIsDashing();
+
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield", Replicated)
 		class ARogueShield* RogueShield;
 
@@ -41,26 +46,17 @@ public:
 		bool m_CanDash = true;
 
 protected:
+
 	virtual void BeginPlay() override;
 
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-
-	//void SpawnShield();
-
-	/*UFUNCTION(NetMulticaast, Reliable)
-		void NMC_SpawnShield();*/
-
 	void ShieldPlatform();
 
 	UFUNCTION(Server, Reliable)
-		void Server_ShieldPlatform();
+	void Server_ShieldPlatform();
 
 private:
-
-	virtual void Tick(float DeltaTime) override;
-
-
 
 	FVector m_InitialVel;
 	float m_GroundFriction;
