@@ -55,6 +55,7 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 		void Server_ShieldPlatform();
+
 private:
 
 	virtual void Tick(float DeltaTime) override;

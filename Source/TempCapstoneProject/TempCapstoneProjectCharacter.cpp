@@ -141,6 +141,11 @@ void ATempCapstoneProjectCharacter::Tick(float DeltaSeconds)
 
 void ATempCapstoneProjectCharacter::OnInteract()
 {
+	Server_OnInteract();
+}
+
+void ATempCapstoneProjectCharacter::Server_OnInteract_Implementation()
+{
 	if (Interface)
 		Interface->Interact();
 }
