@@ -2,6 +2,7 @@
 
 #include "SplitScreenGameViewportClient.h"
 
+// TODO: FIX CLIENT SPLIT
 void USplitScreenGameViewportClient::SetSplitscreenBias(float targetBiasPercent, float transitionDuration, EScreenDividerMovementStyle style)
 {
 	ShiftStyle = style;
@@ -69,6 +70,7 @@ void USplitScreenGameViewportClient::Tick(float DeltaTime)
 	}
 }
 
+// TODO: ENSURE SAME CHARACTER ON SAME SIDE ON CLIENT AND SERVER
 void USplitScreenGameViewportClient::LayoutPlayers()
 {
 	UpdateActiveSplitscreenType();

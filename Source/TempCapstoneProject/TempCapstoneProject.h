@@ -14,3 +14,11 @@ enum class EScreenDividerMovementStyle : uint8
 	SmoothEnd,
 	Overshoot
 };
+
+UENUM()
+enum class ECharacterType : uint8
+{
+	NONE,
+	Paladin,
+	Rogue
+};

@@ -3,14 +3,23 @@
 #include "TempCapstoneProjectCharacter.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/MovementComponent.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "InteractionInterface.h"
 
 #include "Animation/ProceduralAnimationComponent.h"
 
+#include "TempCapstoneProjectGameMode.h"
+#include "Kismet/GameplayStatics.h"
+#include "DummyPawn.h"
+
+#include "Net/UnrealNetwork.h"
 //////////////////////////////////////////////////////////////////////////
 // ATempCapstoneProjectCharacter
 
@@ -18,6 +27,8 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+
+	//	DummyController = CreateDefaultSubobject<APlayerController>(TEXT("dummyController"));
 
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
@@ -44,15 +55,58 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-	
+
 	ProcAnimComp = CreateDefaultSubobject<UProceduralAnimationComponent>(TEXT("ProcAnimComp"));
-	// ProcAnimComp->Setup(GetCapsuleComponent());
+	//	UGameplayStatics::CreatePlayer(GetWorld(), -1);
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+
+	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Interaction Box"));
+	InteractionBox->SetBoxExtent(FVector(140.0f, 140.0f, 65.0f));
+	InteractionBox->SetupAttachment(RootComponent);
+
+	SetReplicates(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
+//	void ATempCapstoneProjectCharacter::SpawnDummy(APlayerController* dummyController)
+//	{
+//	}
+
+void ATempCapstoneProjectCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	if (GetController())
+	{
+		UGameplayStatics::CreatePlayer(GetWorld(), -1);
+	}
+
+	ProcAnimComp->Setup();
+
+	//	if (GetLocalRole() == ROLE_AutonomousProxy)
+	//	{
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::White, GetName());
+	//	}
+	// GEngine->AddOnScreenDebugMessage(-1, 50, FColor::White, FString::Printf(TEXT("%d , %d"), local, remote));
+	// GEngine->AddOnScreenDebugMessage(-1, 50, FColor::White, GetName());
+	//	switch (GetLocalRole())
+	//	{
+	//	case ROLE_None:
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Red, FString::Printf(TEXT("NONE |")));
+	//		break;
+	//	case ROLE_SimulatedProxy:
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Green, FString::Printf(TEXT("SimProc |")));
+	//		break;
+	//	case ROLE_AutonomousProxy:
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Blue, FString::Printf(TEXT("AutProc |")));
+	//		break;
+	//	case ROLE_Authority:
+	//		GEngine->AddOnScreenDebugMessage(-1, 50, FColor::Yellow, FString::Printf(TEXT("Auth |")));
+	//		break;
+	//	}
+}
+
 
 void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -60,9 +114,6 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-
-	// TEMP
-	PlayerInputComponent->BindAction("ToggleSprint", IE_Pressed, this, &ATempCapstoneProjectCharacter::ToggleSprint);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ATempCapstoneProjectCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ATempCapstoneProjectCharacter::MoveRight);
@@ -75,85 +126,58 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ATempCapstoneProjectCharacter::LookUpAtRate);
 
-	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &ATempCapstoneProjectCharacter::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &ATempCapstoneProjectCharacter::TouchStopped);
+	// PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ATempCapstoneProjectCharacter::Dash);
 
-	// VR headset functionality
-	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnResetVR);
-
+	// Interact with objects
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ATempCapstoneProjectCharacter::OnInteract);
 }
 
-// TEMP
-void ATempCapstoneProjectCharacter::ToggleSprint()
+
+void ATempCapstoneProjectCharacter::Tick(float DeltaSeconds)
 {
-	// lol this is so awful
-	if (SprintMultiplier == 1.0f)
+    Super::Tick(DeltaSeconds);
+
+	CheckClosestInteraction();
+}
+
+void ATempCapstoneProjectCharacter::OnInteract()
+{
+	if (Interface)
+		Interface->Interact();
+}
+
+void ATempCapstoneProjectCharacter::CheckClosestInteraction()
+{
+	TArray<AActor*>OverlappingActors;
+	InteractionBox->GetOverlappingActors(OverlappingActors);
+
+	if (OverlappingActors.Num() == 0)
 	{
-		SprintMultiplier = 3.0f;
-		GetCharacterMovement()->MaxWalkSpeed *= SprintMultiplier;
+		if (Interface)
+		{
+			Interface->HideInteractionWidget();
+			Interface = nullptr;
+		}
+		return;
 	}
-	else
+
+	AActor* ClosestActor = OverlappingActors[0];
+
+	for (auto CurrentActor : OverlappingActors)
 	{
-		GetCharacterMovement()->MaxWalkSpeed /= SprintMultiplier;
-		SprintMultiplier = 1.0f;
+		if (GetDistanceTo(CurrentActor) < GetDistanceTo(ClosestActor))
+		{
+			ClosestActor = CurrentActor;
+		}
 	}
-}
 
-//	/* CAPSTONE custom stuff */
-//	FRotator UCharacterMovementComponent::ComputeOrientToMovementRotation(const FRotator& CurrentRotation, float DeltaTime, FRotator& DeltaRotation) const
-//	{
-//		if (Acceleration.SizeSquared() < KINDA_SMALL_NUMBER)
-//		{
-//			// AI path following request can orient us in that direction (it's effectively an acceleration)
-//			if (bHasRequestedVelocity && RequestedVelocity.SizeSquared() > KINDA_SMALL_NUMBER)
-//			{
-//				return Velocity.GetSafeNormal().Rotation();
-//			}
-//	
-//			// Don't change rotation if there is no acceleration.
-//			return CurrentRotation;
-//		}
-//	
-//		// Rotate toward direction of acceleration.
-//		return Velocity.GetSafeNormal().Rotation();
-//	}
+	if (Interface)
+		Interface->HideInteractionWidget();
 
-void ATempCapstoneProjectCharacter::OnResetVR()
-{
-	// If TempCapstoneProject is added to a project via 'Add Feature' in the Unreal Editor the dependency on HeadMountedDisplay in TempCapstoneProject.Build.cs is not automatically propagated
-	// and a linker error will result.
-	// You will need to either:
-	//		Add "HeadMountedDisplay" to [YourProject].Build.cs PublicDependencyModuleNames in order to build successfully (appropriate if supporting VR).
-	// or:
-	//		Comment or delete the call to ResetOrientationAndPosition below (appropriate if not supporting VR)
-	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
-}
+	Interface = Cast<IInteractionInterface>(ClosestActor);
 
-void ATempCapstoneProjectCharacter::BeginPlay() {
-	Super::BeginPlay();
-	ProcAnimComp->Setup();
-}
-
-/// void ATempCapstoneProjectCharacter::Tick(float DeltaTime)
-/// {
-/// 	FaceRotation(GetVelocity().Rotation(), DeltaTime);
-/// }
-
-UProceduralAnimationComponent* ATempCapstoneProjectCharacter::GetProceduralAnimComponent()
-{
-	return ProcAnimComp;
-}
-
-
-void ATempCapstoneProjectCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		Jump();
-}
-
-void ATempCapstoneProjectCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		StopJumping();
+	if (Interface)
+		Interface->ShowInteractionWidget();
 }
 
 void ATempCapstoneProjectCharacter::TurnAtRate(float Rate)
@@ -195,4 +219,10 @@ void ATempCapstoneProjectCharacter::MoveRight(float Value)
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
 	}
+}
+
+void ATempCapstoneProjectCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ATempCapstoneProjectCharacter, ProcAnimComp);
 }

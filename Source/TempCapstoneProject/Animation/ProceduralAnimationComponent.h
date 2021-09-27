@@ -59,7 +59,9 @@ public:
 
 protected:
 
+	UPROPERTY(Replicated)
 	class UCapsuleComponent* CapsuleCollider = nullptr;
+	UPROPERTY(Replicated)
 	class UCharacterMovementComponent* MovementComp = nullptr;
 
 	// Lean variables

@@ -12,10 +12,13 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
+#include "Net/UnrealNetwork.h"
+
 UProceduralAnimationComponent::UProceduralAnimationComponent() : AnimInfo()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	WheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WheelMesh"));
+	// WheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WheelMesh"));
+	SetIsReplicatedByDefault(true);
 	//IK_SquareDistanceSinceReplant = 0;
 	//BodyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BodyMesh"));
 }
@@ -28,9 +31,9 @@ void UProceduralAnimationComponent::Setup()
 	MovementComp = C->GetCharacterMovement();
 
 	// For debugging animation
-	WheelMesh->SetRelativeScale3D(FVector(MinStrideLength, 1, MinStrideLength));
-	WheelMesh->SetRelativeLocationAndRotation(FVector(0, 0, MinStrideLength * 100 * 0.5f - CapsuleCollider->GetScaledCapsuleHalfHeight()), CapsuleCollider->GetRelativeRotation());
-	WheelMesh->AttachToComponent(CapsuleCollider, FAttachmentTransformRules::KeepRelativeTransform);
+	// WheelMesh->SetRelativeScale3D(FVector(MinStrideLength, 1, MinStrideLength));
+	// WheelMesh->SetRelativeLocationAndRotation(FVector(0, 0, MinStrideLength * 100 * 0.5f - CapsuleCollider->GetScaledCapsuleHalfHeight()), CapsuleCollider->GetRelativeRotation());
+	// WheelMesh->AttachToComponent(CapsuleCollider, FAttachmentTransformRules::KeepRelativeTransform);
 
 	FVector CapsuleBase = CapsuleCollider->GetRelativeLocation() - FVector(0, 0, CapsuleCollider->GetScaledCapsuleHalfHeight());
 	FVector LegOffset_Right = CapsuleCollider->GetRightVector() * StepWidth;
@@ -65,7 +68,7 @@ void UProceduralAnimationComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 
-	if (CapsuleCollider == nullptr)
+	if (CapsuleCollider == nullptr || MovementComp == nullptr)
 		return;
 	
 	CalcPelvisZ = 0;
@@ -84,15 +87,14 @@ void UProceduralAnimationComponent::TickComponent(float DeltaTime, ELevelTick Ti
 
 void UProceduralAnimationComponent::HandleHamsterWheel(float DeltaTime, FVector worldVelocity)
 {
-	// EXPOSE worldVelocity.Size() / MovementComp->GetMaxSpeed() AND USE IT TO BLEND BETWEEN WALK AND RUN INSTEAD OF DOING IT LIKE AN IDIOT
 	FVector WorldVel2D = worldVelocity;
 	WorldVel2D.Z = 0;
 
-	AnimInfo.WalkRunBlend = WorldVel2D.Size2D() / MovementComp->GetMaxSpeed();
+	AnimInfo.WalkRunBlend = FMath::Clamp(WorldVel2D.Size2D() / MovementComp->GetMaxSpeed(), 0.f, 1.f);
 	float StrideLength = FMath::Lerp(MinStrideLength, MaxStrideLength, AnimInfo.WalkRunBlend);
-	WheelMesh->SetRelativeLocation(FVector(0, 0, StrideLength * 100 * 0.5f - CapsuleCollider->GetScaledCapsuleHalfHeight()));
-	WheelMesh->SetRelativeScale3D(FVector(StrideLength, 1, StrideLength));
 
+	//WheelMesh->SetRelativeLocation(FVector(0, 0, StrideLength * 100 * 0.5f - CapsuleCollider->GetScaledCapsuleHalfHeight()));
+	//WheelMesh->SetRelativeScale3D(FVector(StrideLength, 1, StrideLength));
 
 	float WheelRotationThisFrame = WorldVel2D.Size() * 0.01f * DeltaTime * 180.f / (StrideLength * 0.5f * PI);
 	float PercentAroundWheelThisFrame = WorldVel2D.Size() * 0.01f * DeltaTime / (2 * PI * StrideLength * 0.5f);
@@ -120,11 +122,11 @@ void UProceduralAnimationComponent::HandleHamsterWheel(float DeltaTime, FVector 
 	//	AnimInfo.RFootIK_BlendFactor = FMath::Clamp(sinf(2 * PI * AnimInfo.PoseBlendAlpha), 0.f, 1.f);
 	//	AnimInfo.LFootIK_BlendFactor = FMath::Clamp(sinf(PI * (2 * AnimInfo.PoseBlendAlpha + 0.5f)), 0.f, 1.f);
 
-
 	// AnimInfo.PoseBlendAlpha = fmod(AnimInfo.PoseBlendAlpha, 1.0f);
-
-	WheelMesh->AddLocalRotation(FRotator(-WheelRotationThisFrame, 0, 0));
+	//WheelMesh->AddLocalRotation(FRotator(-WheelRotationThisFrame, 0, 0));
 }
+
+
 
 void UProceduralAnimationComponent::HandleLean(float DeltaTime, FVector worldVelocity)
 {
@@ -138,7 +140,6 @@ void UProceduralAnimationComponent::HandleLean(float DeltaTime, FVector worldVel
 	);
 
 	FVector AccelVector = 50 * VelocityChange * DeltaTime;
-
 
 	OldVelocity = worldVelocity;
 	//--
@@ -195,7 +196,9 @@ void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 
 	float MinDistanceFromRoot = 48.f;
 
-	bool lhit, rhit = false;
+	bool lhit = false;
+	bool rhit = false;
+
 	FHitResult hit;
 	
 	FVector lfootRayOrigin = CharacterMesh->GetSocketTransform(FName("IK_LFootSocket")).GetLocation();
@@ -213,7 +216,7 @@ void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 	
 	if (GetWorld()->LineTraceSingleByChannel(hit, lfootRayOrigin, lfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
 	{
-		DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
+		// DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
 		LDistance = hit.Distance;
 		lNormal = hit.Normal;
 		lhit = true;
@@ -231,7 +234,7 @@ void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 	
 	if (GetWorld()->LineTraceSingleByChannel(hit, rfootRayOrigin, rfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
 	{
-		DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
+		// DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
 		RDistance = hit.Distance;
 		rNormal = hit.Normal;
 		rhit = true;
@@ -330,6 +333,13 @@ void UProceduralAnimationComponent::UpdateIKTarget()
 	// FVector LOrigin = CapsuleBase - LegOffset_Right;
 
 	// FVector TargetL = LOrigin + CapsuleCollider->GetComponentVelocity() * deltaTime + CapsuleCollider->GetComponentAcceler * deltaTime
+}
+
+void UProceduralAnimationComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UProceduralAnimationComponent, CapsuleCollider);
+	DOREPLIFETIME(UProceduralAnimationComponent, MovementComp);
 }
 
 // CODE DUMP:
