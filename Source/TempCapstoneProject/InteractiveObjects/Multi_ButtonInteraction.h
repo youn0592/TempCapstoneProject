@@ -23,6 +23,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactive Object")
 	class AMulti_ButtonInteraction* TargetInteractive;
 
+	UPROPERTY(Replicated)
 	bool bIsActive = false;
 
 protected:
@@ -36,6 +37,10 @@ public:
 
 	// Interface Functions
 	virtual void Interact() override;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void NMC_Interact();
+
 	virtual void ShowInteractionWidget() override;
 	virtual void HideInteractionWidget() override;
 

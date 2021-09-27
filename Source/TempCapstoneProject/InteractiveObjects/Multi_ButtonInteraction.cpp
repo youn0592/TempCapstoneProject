@@ -5,12 +5,15 @@
 #include "Components/WidgetComponent.h"
 #include "Components/BoxComponent.h"
 #include "ButtonInteraction.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AMulti_ButtonInteraction::AMulti_ButtonInteraction()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	SetReplicates(true);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>("Scene Root");
 	RootComponent = SceneRoot;
@@ -24,6 +27,7 @@ AMulti_ButtonInteraction::AMulti_ButtonInteraction()
 	InteractionWidget = CreateDefaultSubobject<UWidgetComponent>("Interaction Widget");
 	InteractionWidget->SetupAttachment(RootComponent);
 	InteractionWidget->SetVisibility(false);
+
 }
 
 // Called when the game starts or when spawned
@@ -40,9 +44,13 @@ void AMulti_ButtonInteraction::Tick(float DeltaTime)
 
 void AMulti_ButtonInteraction::Interact()
 {
+	NMC_Interact();
+}
+
+void AMulti_ButtonInteraction::NMC_Interact_Implementation()
+{
 	// Toggle Active State
 	bIsActive = !bIsActive;
-
 	ReceiveInteract();
 }
 
@@ -56,3 +64,8 @@ void AMulti_ButtonInteraction::HideInteractionWidget()
 	InteractionWidget->SetVisibility(false);
 }
 
+void AMulti_ButtonInteraction::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AMulti_ButtonInteraction, bIsActive);
+}

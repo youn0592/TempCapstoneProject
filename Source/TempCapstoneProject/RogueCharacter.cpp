@@ -8,10 +8,28 @@
 #include "GameFramework/Character.h"
 #include "TempCapstoneProject.h"
 #include "Net/UnrealNetwork.h"
+#include "RogueShield.h"
 
 ARogueCharacter::ARogueCharacter()
 {
 	SetReplicates(true);
+}
+
+void ARogueCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Create the shield
+	RogueShield = GetWorld()->SpawnActor<ARogueShield>(GetCapsuleComponent()->GetRelativeLocation() + FVector(0.0f, 0.0f, 100.0f), GetCapsuleComponent()->GetRelativeRotation());
+	RogueShield->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
+}
+
+void ARogueCharacter::Tick(float DeltaTime)
+{
+	if (GetLocalRole() < ROLE_Authority)
+	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::White, FString::Printf(TEXT("%d"), m_IsShieldVisible));
+	else
+	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Yellow, FString::Printf(TEXT("%d"), m_IsShieldVisible));
 }
 
 void ARogueCharacter::Dash()
@@ -57,6 +75,10 @@ void ARogueCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInp
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ARogueCharacter::Dash);
+
+	// Input for Holding the Shield up
+	PlayerInputComponent->BindAction("ShieldPlatform", IE_Pressed, this, &ARogueCharacter::ShieldPlatform);
+	//PlayerInputComponent->BindAction("ShieldPlatform", IE_Released, this, &ARogueCharacter::ShieldPlatform);
 }
 
 bool ARogueCharacter::GetIsDashing()
@@ -67,4 +89,23 @@ bool ARogueCharacter::GetIsDashing()
 ECharacterType ARogueCharacter::GetCharacterType()
 {
 	return ECharacterType::Rogue;
+}
+
+void ARogueCharacter::ShieldPlatform()
+{
+	if (!RogueShield)
+		return;
+
+	Server_ShieldPlatform();
+}
+
+void ARogueCharacter::Server_ShieldPlatform_Implementation()
+{
+	RogueShield->ToggleShield();
+}
+
+void ARogueCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ARogueCharacter, m_CanDash);
 }

@@ -63,6 +63,10 @@ private:
 
 	void OnInteract();
 
+	UFUNCTION(Server, Reliable)
+	void Server_OnInteract();
+
+
 	void CheckClosestInteraction();
 };
 
