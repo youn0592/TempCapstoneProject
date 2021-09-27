@@ -57,7 +57,6 @@ ATempCapstoneProjectCharacter::ATempCapstoneProjectCharacter()
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	ProcAnimComp = CreateDefaultSubobject<UProceduralAnimationComponent>(TEXT("ProcAnimComp"));
-	//	UGameplayStatics::CreatePlayer(GetWorld(), -1);
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
@@ -136,13 +135,13 @@ void ATempCapstoneProjectCharacter::SetupPlayerInputComponent(class UInputCompon
 void ATempCapstoneProjectCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
-
 	CheckClosestInteraction();
 }
 
 void ATempCapstoneProjectCharacter::OnInteract()
 {
-	Server_OnInteract();
+	if (Interface)
+		Server_OnInteract();
 }
 
 void ATempCapstoneProjectCharacter::Server_OnInteract_Implementation()
@@ -170,6 +169,9 @@ void ATempCapstoneProjectCharacter::CheckClosestInteraction()
 
 	for (auto CurrentActor : OverlappingActors)
 	{
+		//	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Green, CurrentActor->GetName());
+		//	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, CurrentActor->GetName());
+
 		if (GetDistanceTo(CurrentActor) < GetDistanceTo(ClosestActor))
 		{
 			ClosestActor = CurrentActor;

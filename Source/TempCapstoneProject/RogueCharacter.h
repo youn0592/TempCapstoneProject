@@ -13,6 +13,7 @@ class TEMPCAPSTONEPROJECT_API ARogueCharacter : public ATempCapstoneProjectChara
 	GENERATED_BODY()
 	
 public:
+
 	ARogueCharacter();
 
 	UPROPERTY(EditAnywhere)
@@ -45,26 +46,17 @@ public:
 		bool m_CanDash = true;
 
 protected:
+
 	virtual void BeginPlay() override;
 
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-
-	//void SpawnShield();
-
-	/*UFUNCTION(NetMulticaast, Reliable)
-		void NMC_SpawnShield();*/
-
 	void ShieldPlatform();
 
 	UFUNCTION(Server, Reliable)
-		void Server_ShieldPlatform();
+	void Server_ShieldPlatform();
 
 private:
-
-	virtual void Tick(float DeltaTime) override;
-
-
 
 	FVector m_InitialVel;
 	float m_GroundFriction;

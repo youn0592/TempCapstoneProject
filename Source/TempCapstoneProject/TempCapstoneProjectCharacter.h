@@ -43,9 +43,9 @@ protected:
 	void TurnAtRate(float Rate);
 	void LookUpAtRate(float Rate);
 
-	virtual void BeginPlay() override;
-
 public:
+
+	virtual void BeginPlay() override;
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }

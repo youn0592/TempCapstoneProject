@@ -214,7 +214,7 @@ void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 	FCollisionQueryParams qp;
 	qp.AddIgnoredActor(GetOwner());
 	
-	if (GetWorld()->LineTraceSingleByChannel(hit, lfootRayOrigin, lfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
+	if (GetWorld()->LineTraceSingleByChannel(hit, lfootRayOrigin, lfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_Visibility, qp))
 	{
 		// DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
 		LDistance = hit.Distance;
@@ -232,7 +232,7 @@ void UProceduralAnimationComponent::HandleIK(float DeltaTime)
 	//		}
 	//	}
 	
-	if (GetWorld()->LineTraceSingleByChannel(hit, rfootRayOrigin, rfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_WorldStatic, qp))
+	if (GetWorld()->LineTraceSingleByChannel(hit, rfootRayOrigin, rfootRayOrigin + FVector::DownVector * RayRange /*lfoot.GetRotation().GetForwardVector()*/, ECollisionChannel::ECC_Visibility, qp))
 	{
 		// DrawDebugSphere(GetWorld(), hit.Location, 4.0f, 8, FColor::Red);
 		RDistance = hit.Distance;

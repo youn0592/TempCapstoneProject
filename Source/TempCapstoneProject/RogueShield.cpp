@@ -51,7 +51,6 @@ void ARogueShield::ToggleShield()
 
 void ARogueShield::Server_ToggleShield_Implementation()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 0.2, FColor::Yellow, FString::Printf(TEXT("ServerCalled")));
 	m_IsVisible = !m_IsVisible;
 }
 

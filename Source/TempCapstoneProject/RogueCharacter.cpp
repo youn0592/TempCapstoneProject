@@ -24,14 +24,6 @@ void ARogueCharacter::BeginPlay()
 	RogueShield->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
 }
 
-void ARogueCharacter::Tick(float DeltaTime)
-{
-	if (GetLocalRole() < ROLE_Authority)
-	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::White, FString::Printf(TEXT("%d"), m_IsShieldVisible));
-	else
-	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Yellow, FString::Printf(TEXT("%d"), m_IsShieldVisible));
-}
-
 void ARogueCharacter::Dash()
 {
 	Server_Dash();
