@@ -33,13 +33,18 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield", Replicated)
 		class ARogueShield* RogueShield;
+
+	UPROPERTY(Replicated)
+		bool m_IsShieldVisible = false;
+
+	UPROPERTY(Replicated)
+		bool m_CanDash = true;
+
 protected:
 	virtual void BeginPlay() override;
 
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UPROPERTY(Replicated)
-	bool m_IsShieldVisible = false;
 
 	//void SpawnShield();
 
@@ -51,7 +56,11 @@ protected:
 	UFUNCTION(Server, Reliable)
 		void Server_ShieldPlatform();
 private:
-	bool m_CanDash = true;
+
+	virtual void Tick(float DeltaTime) override;
+
+
+
 	FVector m_InitialVel;
 	float m_GroundFriction;
 };

@@ -10,6 +10,8 @@
 ARogueShield::ARogueShield()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	SetReplicates(true);
+
 	PrimaryActorTick.bCanEverTick = true;
 
 	ShieldCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("ShieldComp"));
@@ -33,29 +35,24 @@ ARogueShield::ARogueShield()
 		ShieldMesh->SetStaticMesh(FindShieldMesh.Object);
 	}
 
-	ShieldEnable(false);
-
-	SetReplicates(true);
+	m_IsVisible = false;
+	SetActorHiddenInGame(!m_IsVisible);
+	SetActorEnableCollision(m_IsVisible);
+	SetActorTickEnabled(m_IsVisible);
 }
 
-void ARogueShield::ShieldEnable(bool e)
+void ARogueShield::ToggleShield()
 {
-	Server_ShieldEnable(e);
-
-	// Works on client but not on Server. Tried from both sides.
-	//SetActorHiddenInGame(!e); // Actor is being Replicated
-	//SetActorEnableCollision(e);
-	//SetActorTickEnabled(e);
-	//ShieldMesh->SetVisibility(e); // Mesh is being Replicated
+	Server_ToggleShield();
+	SetActorHiddenInGame(!m_IsVisible);
+	SetActorEnableCollision(m_IsVisible);
 }
 
-void ARogueShield::Server_ShieldEnable_Implementation(bool e)
+
+void ARogueShield::Server_ToggleShield_Implementation()
 {
-	// Works on client but not on Server. Tried from both sides.
-	SetActorHiddenInGame(!e); // Actor is being Replicated
-	SetActorEnableCollision(e);
-	SetActorTickEnabled(e);
-	ShieldMesh->SetHiddenInGame(!e, true); // Mesh is being Replicated	
+	GEngine->AddOnScreenDebugMessage(-1, 0.2, FColor::Yellow, FString::Printf(TEXT("ServerCalled")));
+	m_IsVisible = !m_IsVisible;
 }
 
 // Called when the game starts or when spawned
@@ -65,16 +62,8 @@ void ARogueShield::BeginPlay()
 	
 }
 
-// Called every frame
-void ARogueShield::Tick(float DeltaTime)
+void ARogueShield::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	Super::Tick(DeltaTime);
-
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ARogueShield, m_IsVisible);
 }
-
-//void ARogueShield::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-//{
-//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-//	/*DOREPLIFETIME(ARogueShield, ShieldMesh);
-//	DOREPLIFETIME(ARogueShield, m_IsVisible);*/
-//}

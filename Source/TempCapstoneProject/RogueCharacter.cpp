@@ -23,10 +23,13 @@ void ARogueCharacter::BeginPlay()
 	RogueShield->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
 }
 
-//void ARogueCharacter::SpawnShield()
-//{
-//
-//}
+void ARogueCharacter::Tick(float DeltaTime)
+{
+	if (GetLocalRole() < ROLE_Authority)
+	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::White, FString::Printf(TEXT("%d"), m_IsShieldVisible));
+	else
+	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Yellow, FString::Printf(TEXT("%d"), m_IsShieldVisible));
+}
 
 void ARogueCharacter::Dash()
 {
@@ -79,27 +82,19 @@ void ARogueCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInp
 
 void ARogueCharacter::ShieldPlatform()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, FString::Printf(TEXT("%d"), m_IsShieldVisible));
+	if (!RogueShield)
+		return;
+
 	Server_ShieldPlatform();
-	m_IsShieldVisible = !m_IsShieldVisible;
-
-	/*if (RogueShield)
-		RogueShield->ShieldEnable(m_IsShieldVisible);*/
-
 }
 
 void ARogueCharacter::Server_ShieldPlatform_Implementation()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, FString::Printf(TEXT("%d"), m_IsShieldVisible));
-
-	m_IsShieldVisible = !m_IsShieldVisible;
-	if (RogueShield)
-		RogueShield->ShieldEnable(m_IsShieldVisible);
+	RogueShield->ToggleShield();
 }
 
 void ARogueCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(ARogueCharacter, RogueShield);
-	DOREPLIFETIME(ARogueCharacter, m_IsShieldVisible);
+	DOREPLIFETIME(ARogueCharacter, m_CanDash);
 }
