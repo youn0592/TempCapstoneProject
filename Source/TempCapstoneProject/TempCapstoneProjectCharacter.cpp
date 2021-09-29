@@ -140,6 +140,7 @@ void ATempCapstoneProjectCharacter::Tick(float DeltaSeconds)
 
 void ATempCapstoneProjectCharacter::OnInteract()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 4, FColor::Green, FString::Printf(TEXT("%d-%d"), GetLocalRole(), GetRemoteRole()));
 	if (Interface)
 		Server_OnInteract();
 }
@@ -169,7 +170,6 @@ void ATempCapstoneProjectCharacter::CheckClosestInteraction()
 
 	for (auto CurrentActor : OverlappingActors)
 	{
-		//	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Green, CurrentActor->GetName());
 		//	GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, CurrentActor->GetName());
 
 		if (GetDistanceTo(CurrentActor) < GetDistanceTo(ClosestActor))

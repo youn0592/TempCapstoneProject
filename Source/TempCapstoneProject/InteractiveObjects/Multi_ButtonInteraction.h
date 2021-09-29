@@ -17,7 +17,7 @@ public:
 	// Sets default values for this actor's properties
 	AMulti_ButtonInteraction();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactive Object")
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Interactive Object")
 	AActor* TargetActor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactive Object")

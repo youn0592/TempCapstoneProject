@@ -50,8 +50,8 @@ void ADummyPawn::Tick(float DeltaTime)
 		FVector targetCamPos = CamToFollow->GetComponentLocation();
 		FRotator targetCamRot = CamToFollow->GetComponentRotation();
 		
-		DummyCamera->SetRelativeLocation(FMath::VInterpTo(DummyCamera->GetRelativeLocation(), targetCamPos, DeltaTime, 20.f));
-		DummyCamera->SetRelativeRotation(FMath::RInterpTo(DummyCamera->GetRelativeRotation(), targetCamRot, DeltaTime, 20.f));
+		DummyCamera->SetRelativeLocation(FMath::VInterpTo(DummyCamera->GetRelativeLocation(), targetCamPos, DeltaTime, 10.f));
+		DummyCamera->SetRelativeRotation(FMath::RInterpTo(DummyCamera->GetRelativeRotation(), targetCamRot, DeltaTime, 10.f));
 	}
 }
 

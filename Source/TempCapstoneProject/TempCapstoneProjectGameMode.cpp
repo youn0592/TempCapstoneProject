@@ -7,6 +7,7 @@
 #include "UObject/ConstructorHelpers.h"
 
 #include "SplitScreenGameViewportClient.h"
+#include "TempCapstoneProjectGameState.h"
 #include "Engine/LevelStreaming.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -169,7 +170,7 @@ void ATempCapstoneProjectGameMode::SpawnPawnAndPosess(APlayerController* NewPlay
 			// everyone's in the game, setup dummy pawns
 			Cast<ADummyPawn>(PlayerControllerList[1]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[2]->GetCharacter()) );
 			Cast<ADummyPawn>(PlayerControllerList[3]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[0]->GetCharacter()) );
-
+			SetSplitscreenBias(1, 0, true);
 			break;
 		}
 	}
@@ -202,12 +203,9 @@ void ATempCapstoneProjectGameMode::SpawnPawnAndPosess(APlayerController* NewPlay
 }
 
 
-void ATempCapstoneProjectGameMode::SetSplitscreenBias(float TargetBias, float TransitionDuration, EScreenDividerMovementStyle TransitionStyle)
+void ATempCapstoneProjectGameMode::SetSplitscreenBias(float TargetBias, float TransitionDuration, bool Symmetrical, EScreenDividerMovementStyle TransitionStyle)
 {
-	if (GameViewportClient != nullptr)
-	{
-		GameViewportClient->SetSplitscreenBias(TargetBias, TransitionDuration, TransitionStyle);
-	}
+	GetGameState<ATempCapstoneProjectGameState>()->SetSplitscreenBias(TargetBias, TransitionDuration, Symmetrical, TransitionStyle);
 }
 
 

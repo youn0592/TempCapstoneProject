@@ -16,7 +16,7 @@ public:
 	// Sets default values for this actor's properties
 	AButtonInteraction();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactive Object")
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Interactive Object")
 	AActor* TargetActor;
 
 	UPROPERTY(Replicated)

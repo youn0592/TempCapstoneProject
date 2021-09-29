@@ -19,6 +19,7 @@ protected:
 
 	// pointer to custom game viewport class for splitscreen purposes
 	class USplitScreenGameViewportClient* GameViewportClient = nullptr;
+	class ATempCapstoneProjectGameState* GameState = nullptr;
 
 	TSubclassOf <ACharacter> pRogueBP;
 	TSubclassOf <ACharacter> pPaladinBP;
@@ -47,7 +48,7 @@ public:
 
 	// method used to modify the splitscreen split bias
 	UFUNCTION(BlueprintCallable)
-		void SetSplitscreenBias(float TargetBias, float TransitionDuration = 1.0f, EScreenDividerMovementStyle TransitionStyle = EScreenDividerMovementStyle::Linear);
+		void SetSplitscreenBias(float TargetBias, float TransitionDuration = 1.0f, bool Symmetrical = false, EScreenDividerMovementStyle TransitionStyle = EScreenDividerMovementStyle::Linear);
 
 	TArray<class APlayerController*> PlayerControllerList;
 

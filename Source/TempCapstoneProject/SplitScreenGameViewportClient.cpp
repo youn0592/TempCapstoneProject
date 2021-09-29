@@ -3,10 +3,12 @@
 #include "SplitScreenGameViewportClient.h"
 
 // TODO: FIX CLIENT SPLIT
-void USplitScreenGameViewportClient::SetSplitscreenBias(float targetBiasPercent, float transitionDuration, EScreenDividerMovementStyle style)
+void USplitScreenGameViewportClient::SetSplitscreenBias(float targetBiasPercent, float transitionDuration, bool symmetrical, EScreenDividerMovementStyle style)
 {
 	ShiftStyle = style;
+	Symmetric = symmetrical;
 	TransitionDuration = transitionDuration;
+
 	TargetSplitscreenBias = FMath::Clamp(targetBiasPercent, 0.f, 1.f);
 
 	InitialSplitscreenBias = SplitscreenBias;
@@ -78,16 +80,20 @@ void USplitScreenGameViewportClient::LayoutPlayers()
 
 	// Initialize the players
 	const TArray<ULocalPlayer*>& PlayerList = GetOuterUEngine()->GetGamePlayers(this);
+	
+	bool IsServer = GetWorld()->IsServer();
 
 	SplitscreenBias = FMath::Clamp(SplitscreenBias, 0.f, 1.f);
-
+	
+	float finalBias = (IsServer) ? SplitscreenBias : 1 - SplitscreenBias;
+	
 	for (int32 PlayerIdx = 0; PlayerIdx < PlayerList.Num(); PlayerIdx++)
 	{
 		if (SplitType < SplitscreenInfo.Num() && PlayerIdx < SplitscreenInfo[SplitType].PlayerData.Num())
 		{
-			PlayerList[PlayerIdx]->Size.X = PlayerIdx ? 1 - SplitscreenBias : SplitscreenBias;
+			PlayerList[PlayerIdx]->Size.X = PlayerIdx ? 1 - finalBias : finalBias;
 			PlayerList[PlayerIdx]->Size.Y = 1;
-			PlayerList[PlayerIdx]->Origin.X = PlayerIdx ? SplitscreenBias : 0;
+			PlayerList[PlayerIdx]->Origin.X = PlayerIdx ? finalBias : 0;
 			PlayerList[PlayerIdx]->Origin.Y = 0;
 			PlayerList[PlayerIdx]->AspectRatioAxisConstraint = EAspectRatioAxisConstraint::AspectRatio_MaintainYFOV;
 		}

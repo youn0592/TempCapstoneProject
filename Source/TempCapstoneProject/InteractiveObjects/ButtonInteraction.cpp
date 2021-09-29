@@ -66,4 +66,5 @@ void AButtonInteraction::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AButtonInteraction, bIsActive);
+	DOREPLIFETIME(AButtonInteraction, TargetActor);
 }
