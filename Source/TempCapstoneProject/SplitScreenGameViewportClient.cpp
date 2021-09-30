@@ -89,6 +89,12 @@ void USplitScreenGameViewportClient::LayoutPlayers()
 	
 	for (int32 PlayerIdx = 0; PlayerIdx < PlayerList.Num(); PlayerIdx++)
 	{
+
+		if (PlayerIdx > 1)
+		{
+			break;
+		}
+
 		if (SplitType < SplitscreenInfo.Num() && PlayerIdx < SplitscreenInfo[SplitType].PlayerData.Num())
 		{
 			PlayerList[PlayerIdx]->Size.X = PlayerIdx ? 1 - finalBias : finalBias;

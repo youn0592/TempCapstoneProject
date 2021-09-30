@@ -158,18 +158,18 @@ void ATempCapstoneProjectGameMode::SpawnPawnAndPosess(APlayerController* NewPlay
 			RestartPlayerAtPlayerStart(NewPlayer, PlayerOneIsPaladin ? PaladinStartPoint : RogueStartPoint);
 			break;
 		
-		case 3:
+		case 4:
 			DefaultPawnClass = !PlayerOneIsPaladin ? pPaladinBP : pRogueBP;
 			RestartPlayerAtPlayerStart(NewPlayer, !PlayerOneIsPaladin ? PaladinStartPoint : RogueStartPoint);
 			break;
 		
-		case 4:
+		case 5:
 			DefaultPawnClass = pDummyBP;
 			RestartPlayerAtPlayerStart(NewPlayer, !PlayerOneIsPaladin ? PaladinStartPoint : RogueStartPoint);
 
 			// everyone's in the game, setup dummy pawns
-			Cast<ADummyPawn>(PlayerControllerList[1]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[2]->GetCharacter()) );
-			Cast<ADummyPawn>(PlayerControllerList[3]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[0]->GetCharacter()) );
+			Cast<ADummyPawn>(PlayerControllerList[1]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[3]->GetCharacter()) );
+			Cast<ADummyPawn>(PlayerControllerList[4]->GetPawn())->SetupDummyPawn( Cast<ATempCapstoneProjectCharacter>(PlayerControllerList[0]->GetCharacter()) );
 			SetSplitscreenBias(1, 0, true);
 			break;
 		}
