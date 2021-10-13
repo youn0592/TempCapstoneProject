@@ -8,6 +8,7 @@ public class TempCapstoneProject : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemNull", "Steamworks","Json","JsonUtilities"});
+		DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
 	}
 }

@@ -6,7 +6,8 @@ public class TempCapstoneProjectEditor : ModuleRules
 {
 	public TempCapstoneProjectEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "TempCapstoneProject", "BlueprintGraph" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "TempCapstoneProject", "BlueprintGraph"});
+		DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "AnimGraph", "UnrealEd", "ToolMenus", "SlateCore", "GraphEditor" });
 

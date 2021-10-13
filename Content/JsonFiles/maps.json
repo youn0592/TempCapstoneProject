@@ -1,0 +1,10 @@
+{
+  "GameMaps": {
+    "maps": [
+      {
+        "name": "Map1",
+        "info": [ "/Game/ThirdPersonCPP/Maps/ThirdPersonExampleMap", "placeholder", "placeholder" ]
+      }
+  }
+}
+
